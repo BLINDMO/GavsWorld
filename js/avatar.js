@@ -691,18 +691,27 @@ const Avatar = (() => {
         </radialGradient>
       </defs>`;
 
+    /* Lower-face skin patch — repaints face below hairline ON TOP of hairFront
+       so the hair cap never bleeds onto cheeks/jaw/nose/mouth */
+    const LOWER_FACE = 'M -44 8 Q -50 -28 -40 -38 Q -20 -44 0 -44 Q 20 -44 40 -38 Q 50 -28 44 8 Q 38 36 0 42 Q -38 36 -44 8 Z';
+    const faceSkinPatch = `
+      <path d="${LOWER_FACE}" fill="${skin}"/>
+      <path d="${LOWER_FACE}" fill="url(#face-highlight)" opacity=".55"/>`;
+
     return [
       defs,
       collar,
       hairBack,
-      /* face fill */
+      /* base face fill (visible above the hairline through hair styles) */
       `<path d="${FACE_PATH}" fill="${skin}"/>`,
-      `<path d="${FACE_PATH}" fill="url(#face-highlight)"/>`,
+      /* front hair drawn on face — cap may overlap into lower face */
+      hairFront,
+      /* lower-face patch restores skin color below the hairline */
+      faceSkinPatch,
       faceShadow,
       ears,
       nose,
       mouth,
-      hairFront,
       brows,
       eyesSVG,
       accSVG,
