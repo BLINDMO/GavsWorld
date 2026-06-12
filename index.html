@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#070d1a"/>
+  <meta name="description" content="Gavin's World — Your world. Your rules."/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Gavin's World"/>
+  <title>Gavin's World</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- Ambient particle canvas -->
+<canvas id="bg-particles" aria-hidden="true"></canvas>
+
+<div id="app">
+
+  <!-- ========================================
+       HOME PAGE
+       ======================================== -->
+  <section id="page-home" class="page active">
+    <div class="home-bg" aria-hidden="true"></div>
+    <div class="home-inner">
+
+      <!-- Nav -->
+      <nav class="home-nav">
+        <div class="logo-mark">
+          <div class="logo-icon">G</div>
+          <span class="logo-text">Gavin's World</span>
+        </div>
+        <div>
+          <div class="home-greeting">Welcome, Gavin</div>
+          <div class="home-date" id="home-date"></div>
+        </div>
+      </nav>
+
+      <!-- Hero: avatar + tiles -->
+      <div class="home-hero">
+
+        <!-- Avatar display -->
+        <div class="avatar-display">
+          <div class="avatar-canvas-wrap" id="home-avatar-wrap" role="button" tabindex="0" aria-label="Customize your avatar">
+            <svg id="home-avatar-svg" class="avatar-svg anim-float"
+              viewBox="-80 -240 160 380" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"></svg>
+          </div>
+          <span class="avatar-name-tag">Your Character</span>
+          <button class="btn-customize-avatar" id="btn-customize-avatar">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5l4 4-9 9H2v-4L11 5zM14 2l4 4"/></svg>
+            Customize
+          </button>
+        </div>
+
+        <!-- Module tiles -->
+        <div class="module-tiles">
+
+          <div class="module-tile" data-module="scroll" role="button" tabindex="0" aria-label="Open The Scroll">
+            <div class="tile-accent"></div>
+            <div class="tile-top">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
+                  <path d="M8 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                  <path d="M14 2v6h6M9 13h6M9 17h4"/>
+                </svg>
+              </div>
+              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
+            </div>
+            <div class="tile-title">The Scroll</div>
+            <div class="tile-sub">Lists · notes · quests · rankings</div>
+          </div>
+
+          <div class="module-tile" data-module="wheel" role="button" tabindex="0" aria-label="Open Wheel of Fate">
+            <div class="tile-accent"></div>
+            <div class="tile-top">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>
+                  <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
+                </svg>
+              </div>
+              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
+            </div>
+            <div class="tile-title">Wheel of Fate</div>
+            <div class="tile-sub">Spin to decide · save your wheels</div>
+          </div>
+
+          <div class="module-tile" data-module="forge" role="button" tabindex="0" aria-label="Open The Forge">
+            <div class="tile-accent"></div>
+            <div class="tile-top">
+              <div class="tile-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#c8d6e8" stroke-width="1.8" stroke-linecap="round">
+                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0l-3 3z"/>
+                  <path d="M13 6L4 15l-1 4 4-1 9-9"/>
+                  <path d="M7.5 10.5l2 2"/>
+                </svg>
+              </div>
+              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
+            </div>
+            <div class="tile-title">The Forge</div>
+            <div class="tile-sub">Design swords · build your fighter</div>
+          </div>
+
+        </div><!-- /module-tiles -->
+      </div><!-- /home-hero -->
+
+    </div><!-- /home-inner -->
+  </section><!-- /page-home -->
+
+
+  <!-- ========================================
+       AVATAR CREATOR PAGE
+       ======================================== -->
+  <section id="page-avatar" class="page">
+    <div class="page-header">
+      <button class="btn-back" id="btn-back-avatar">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+        Home
+      </button>
+      <h1 class="page-title">Your Avatar</h1>
+      <button class="btn-primary" id="btn-save-avatar">Save</button>
+    </div>
+
+    <div class="avatar-creator-layout" style="flex:1;min-height:0;overflow:hidden;">
+      <div class="avatar-preview-pane">
+        <!-- SVG injected by app.js -->
+      </div>
+      <div class="avatar-options-pane">
+        <div class="avatar-tabs">
+          <!-- tabs injected by app.js -->
+        </div>
+        <!-- tab content injected by app.js -->
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ========================================
+       THE SCROLL PAGE
+       ======================================== -->
+  <section id="page-scroll" class="page">
+    <div class="page-header">
+      <button class="btn-back" id="btn-back-scroll">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+        Home
+      </button>
+      <h1 class="page-title">The Scroll</h1>
+    </div>
+
+    <!-- List view -->
+    <div id="scroll-list-view" class="page-content" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="scroll-list-content" class="scroll-grid" style="flex:1;overflow-y:auto;padding:16px 20px 100px;"></div>
+      <button class="scroll-fab" aria-label="New scroll">+</button>
+    </div>
+
+    <!-- Editor view -->
+    <div id="scroll-editor" class="scroll-editor" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <!-- content injected by scroll.js -->
+    </div>
+
+    <!-- Type chooser overlay -->
+    <div id="overlay-scroll-type" class="overlay" role="dialog" aria-modal="true" aria-label="Choose scroll type">
+        <div class="overlay-panel">
+          <div class="overlay-handle"></div>
+          <div class="overlay-title">New Scroll</div>
+          <p style="color:var(--text3);font-size:.85rem;margin-bottom:18px;">Choose what kind of scroll to create.</p>
+          <div class="type-selector" style="flex-direction:column;gap:12px;">
+            <button class="type-btn" data-type="quest" style="padding:14px 18px;text-align:left;border-radius:var(--radius);display:flex;align-items:center;gap:12px;">
+              <span style="font-size:1.4rem">⚔️</span>
+              <div>
+                <div style="font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--silver2);">Quest</div>
+                <div style="font-size:.75rem;color:var(--text3);margin-top:2px;text-transform:none;letter-spacing:0;">Checkboxes for tasks and goals</div>
+              </div>
+            </button>
+            <button class="type-btn" data-type="idea" style="padding:14px 18px;text-align:left;border-radius:var(--radius);display:flex;align-items:center;gap:12px;">
+              <span style="font-size:1.4rem">💡</span>
+              <div>
+                <div style="font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--silver2);">Idea Drop</div>
+                <div style="font-size:.75rem;color:var(--text3);margin-top:2px;text-transform:none;letter-spacing:0;">Free notes and brain dumps</div>
+              </div>
+            </button>
+            <button class="type-btn" data-type="ranking" style="padding:14px 18px;text-align:left;border-radius:var(--radius);display:flex;align-items:center;gap:12px;">
+              <span style="font-size:1.4rem">🏆</span>
+              <div>
+                <div style="font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--silver2);">Ranking</div>
+                <div style="font-size:.75rem;color:var(--text3);margin-top:2px;text-transform:none;letter-spacing:0;">Ordered lists — Top 10 Pokémon, etc.</div>
+              </div>
+            </button>
+            <button class="type-btn" data-type="wishlist" style="padding:14px 18px;text-align:left;border-radius:var(--radius);display:flex;align-items:center;gap:12px;">
+              <span style="font-size:1.4rem">⭐</span>
+              <div>
+                <div style="font-size:1rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--silver2);">Wishlist</div>
+                <div style="font-size:.75rem;color:var(--text3);margin-top:2px;text-transform:none;letter-spacing:0;">Things you want, with priority stars</div>
+              </div>
+            </button>
+          </div>
+        </div>
+    </div>
+  </section>
+
+
+  <!-- ========================================
+       WHEEL OF FATE PAGE
+       ======================================== -->
+  <section id="page-wheel" class="page">
+    <div class="page-header">
+      <button class="btn-back" id="btn-back-wheel">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+        Home
+      </button>
+      <h1 class="page-title">Wheel of Fate</h1>
+    </div>
+
+    <!-- Landing -->
+    <div id="wheel-landing" class="wheel-landing" style="flex:1;">
+      <div class="wheel-landing-title">Wheel of Fate</div>
+      <p class="wheel-landing-sub">Spin to decide. Luck decides the rest.</p>
+      <div class="wheel-landing-btns">
+        <button class="btn-primary btn-orange" id="btn-new-wheel">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>
+          New Wheel
+        </button>
+        <button class="btn-secondary" id="btn-saved-wheels">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="3" y="3" width="14" height="14" rx="3"/>
+            <path d="M7 10h6M7 13h4"/>
+          </svg>
+          Saved Wheels
+        </button>
+      </div>
+    </div>
+
+    <!-- Active wheel spinner -->
+    <div id="wheel-screen" class="wheel-screen" style="display:none;">
+      <div class="wheel-header">
+        <button class="btn-back" id="btn-back-wheel-screen">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+          Back
+        </button>
+        <span class="wheel-name" id="wheel-current-name">My Wheel</span>
+        <button class="btn-ghost" id="btn-save-wheel">Save</button>
+      </div>
+      <div class="wheel-stage" id="wheel-stage">
+        <canvas id="wheel-canvas"></canvas>
+        <div class="wheel-pointer" aria-hidden="true"></div>
+
+        <!-- Pull handle -->
+        <div class="wheel-handle-wrap" aria-label="Pull handle to spin" role="slider">
+          <div class="wheel-handle-track" id="handle-track">
+            <div class="wheel-handle-knob" id="handle-knob" tabindex="0" role="button" aria-label="Drag down to spin">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M10 4v12M6 12l4 4 4-4"/></svg>
+            </div>
+          </div>
+          <span class="wheel-handle-label">PULL</span>
+        </div>
+
+        <!-- Winner overlay -->
+        <div class="wheel-winner" id="wheel-winner" role="status" aria-live="polite">
+          <div class="wheel-winner-label">✦  FATE DECIDES  ✦</div>
+          <div class="wheel-winner-text" id="wheel-winner-text"></div>
+          <div class="wheel-winner-sub">Tap to dismiss</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved wheels grid -->
+    <div id="wheel-saved-screen" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+      <div class="page-header" style="border-top:1px solid var(--border);">
+        <button class="btn-back" id="btn-back-saved">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+          Back
+        </button>
+        <span class="page-title" style="font-size:1.1rem;">Saved Wheels</span>
+        <button class="btn-add" id="btn-add-saved" aria-label="New wheel" style="flex-shrink:0;" onclick="document.getElementById('btn-new-wheel').click()">+</button>
+      </div>
+      <div class="wheels-grid" id="wheels-grid" style="flex:1;overflow-y:auto;"></div>
+    </div>
+
+    <!-- New Wheel overlay -->
+    <div id="overlay-new-wheel" class="overlay" role="dialog" aria-modal="true" aria-label="Create new wheel">
+        <div class="overlay-panel">
+          <div class="overlay-handle"></div>
+          <div class="overlay-title">New Wheel</div>
+          <div class="field-group" style="margin-bottom:16px;">
+            <label class="field-label">Wheel Name</label>
+            <input class="field-input" type="text" id="new-wheel-name" placeholder="e.g. What game to play?"/>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Entries</label>
+            <div id="new-wheel-entries" class="wheel-entries-list"></div>
+          </div>
+          <button class="btn-add" id="btn-add-wheel-entry" style="margin-top:10px;display:flex;align-items:center;gap:6px;width:auto;border-radius:8px;padding:8px 14px;" aria-label="Add entry">
+            +
+          </button>
+          <div id="new-wheel-preview" style="margin:16px 0;display:flex;justify-content:center;width:80px;height:80px;margin-left:auto;margin-right:auto;"></div>
+          <button class="btn-primary btn-orange" id="btn-create-wheel" style="width:100%;margin-top:8px;">Create Wheel</button>
+        </div>
+    </div>
+  </section>
+
+
+  <!-- ========================================
+       THE FORGE PAGE
+       ======================================== -->
+  <section id="page-forge" class="page">
+    <div class="page-header">
+      <button class="btn-back" id="btn-back-forge">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+        Home
+      </button>
+      <h1 class="page-title">The Forge</h1>
+    </div>
+    <div id="forge-mount" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+      <!-- Forge UI mounted here by forge.js -->
+    </div>
+  </section>
+
+</div><!-- /app -->
+
+<!-- ---- Scripts ---- -->
+<script src="js/store.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/swords.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/wheel.js"></script>
+<script src="js/scroll.js"></script>
+<script src="js/forge.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Service Worker registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+</script>
+
+</body>
+</html>
