@@ -255,27 +255,23 @@
     }));
     if (!wheelInited) {
       Wheel.init(activeWheelCanvas, (idx, entry) => {
-        const stage = page.querySelector('#wheel-stage');
+        const stage    = page.querySelector('#wheel-stage');
         const winnerEl = page.querySelector('#wheel-winner');
         const winnerText = page.querySelector('#wheel-winner-text');
-        const tapHint = page.querySelector('.wheel-tap-hint');
+        const spinBtn  = page.querySelector('#btn-spin-wheel');
         const label = typeof entry === 'string' ? entry : (entry.label || '');
         winnerText.textContent = label;
         winnerEl.classList.add('show');
-        if (tapHint) tapHint.classList.remove('hidden');
+        if (spinBtn) spinBtn.disabled = false;
         Wheel.burst(stage);
-      });
-      /* tap canvas to spin */
-      activeWheelCanvas.addEventListener('click', () => {
-        if (!Wheel.spinning) {
-          const tapHint = page.querySelector('.wheel-tap-hint');
-          if (tapHint) tapHint.classList.add('hidden');
-          Wheel.launch(0.10 + Math.random() * 0.12);
-        }
       });
       wheelInited = true;
     }
     Wheel.load(wheelData);
+
+    /* re-enable spin button on new wheel load */
+    const spinBtn = page.querySelector('#btn-spin-wheel');
+    if (spinBtn) spinBtn.disabled = false;
 
     /* hide winner overlay on click */
     const winnerEl = page.querySelector('#wheel-winner');
@@ -390,19 +386,33 @@
     });
   }
 
-  /* ---- Wire pull handle ---- */
-  function wireHandle() {
+  /* ---- Wire spin button ---- */
+  function wireSpinButton() {
     const page = getPage('wheel');
-    const knob = page.querySelector('#handle-knob');
-    const track = page.querySelector('#handle-track');
-    if (!knob || !track) return;
+    const spinBtn = page.querySelector('#btn-spin-wheel');
+    if (!spinBtn) return;
+    spinBtn.addEventListener('click', () => {
+      if (!Wheel.spinning) {
+        spinBtn.disabled = true;
+        const winnerEl = page.querySelector('#wheel-winner');
+        if (winnerEl) winnerEl.classList.remove('show');
+        Wheel.launch(0.18 + Math.random() * 0.16);
+      }
+    });
+  }
 
-    knob.addEventListener('pointerdown', e => Wheel.handlePointerDown(e, knob, track));
-    window.addEventListener('pointermove', e => Wheel.handlePointerMove(e, knob, track));
-    window.addEventListener('pointerup', () => Wheel.handlePointerUp(knob));
-    knob.addEventListener('touchstart', e => Wheel.handlePointerDown(e, knob, track), { passive: false });
-    window.addEventListener('touchmove', e => Wheel.handlePointerMove(e, knob, track), { passive: false });
-    window.addEventListener('touchend', () => Wheel.handlePointerUp(knob));
+  /* ---- Gauntlet module ---- */
+  function openGauntletPage() {
+    showPage('gauntlet', () => {
+      const page = getPage('gauntlet');
+      const mountEl = page.querySelector('#gauntlet-mount');
+      if (!mountEl.dataset.mounted) {
+        Gauntlet.mount(mountEl);
+        mountEl.dataset.mounted = '1';
+      } else {
+        Gauntlet.reset();
+      }
+    });
   }
 
   /* ---- Bootstrap ---- */
@@ -420,9 +430,10 @@
     document.querySelectorAll('.module-tile').forEach(tile => {
       tile.addEventListener('click', () => {
         const mod = tile.dataset.module;
-        if (mod === 'scroll') openScrollPage();
-        if (mod === 'wheel')  openWheelPage();
-        if (mod === 'forge')  openForgePage();
+        if (mod === 'scroll')    openScrollPage();
+        if (mod === 'wheel')     openWheelPage();
+        if (mod === 'forge')     openForgePage();
+        if (mod === 'gauntlet')  openGauntletPage();
       });
     });
 
@@ -514,7 +525,7 @@
         btn.textContent = 'Saved!';
         setTimeout(() => btn.textContent = 'Save', 1800);
       });
-      wireHandle();
+      wireSpinButton();
     }
 
     /* New wheel overlay */
@@ -535,6 +546,12 @@
     const forgePage = getPage('forge');
     if (forgePage) {
       forgePage.querySelector('#btn-back-forge').addEventListener('click', goHome);
+    }
+
+    /* Gauntlet page: back */
+    const gauntletPage = getPage('gauntlet');
+    if (gauntletPage) {
+      gauntletPage.querySelector('#btn-back-gauntlet').addEventListener('click', goHome);
     }
 
     /* Render home avatar after all scripts loaded */

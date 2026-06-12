@@ -220,10 +220,10 @@ body {
 }
 .btn-customize:hover { border-color: var(--blue); color: var(--blue); }
 
-/* Module grid — 3 equal columns */
+/* Module grid — 2×2 */
 .module-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-  width: 100%; max-width: 640px;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  width: 100%; max-width: 420px;
 }
 .module-tile {
   background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
@@ -236,9 +236,10 @@ body {
 .module-tile::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
 }
-.module-tile[data-module="scroll"]::before { background: var(--blue); }
-.module-tile[data-module="wheel"]::before  { background: var(--orange); }
-.module-tile[data-module="forge"]::before  { background: var(--silver-dim); }
+.module-tile[data-module="scroll"]::before    { background: var(--blue); }
+.module-tile[data-module="wheel"]::before     { background: var(--orange); }
+.module-tile[data-module="forge"]::before     { background: var(--silver-dim); }
+.module-tile[data-module="gauntlet"]::before  { background: var(--red); }
 
 .tile-icon-wrap {
   width: 38px; height: 38px; background: var(--bg3); border-radius: 9px;
@@ -377,35 +378,44 @@ body {
 .wheel-screen { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .wheel-header { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
 .wheel-name { flex: 1; text-align: center; font-family: 'Rajdhani','Inter',sans-serif; font-size: 1.05rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--silver); }
-.wheel-stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; min-height: 0; }
+.wheel-stage {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; min-height: 0; gap: 20px; padding: 16px 0 22px;
+}
 
+/* Canvas wrapper — pointer is positioned relative to this */
+.wheel-canvas-wrap {
+  position: relative; flex-shrink: 0;
+  width: min(66vw, 42svh); height: min(66vw, 42svh); max-width: 310px; max-height: 310px;
+}
 #wheel-canvas {
-  display: block; border-radius: 50%; box-shadow: 0 0 40px rgba(0,0,0,.6);
-  width: min(76vw, 52svh); height: min(76vw, 52svh); max-width: 380px; max-height: 380px;
+  display: block; border-radius: 50%;
+  box-shadow: 0 0 44px rgba(0,0,0,.65), 0 0 0 3px rgba(59,130,246,.22);
+  width: 100%; height: 100%;
 }
 .wheel-pointer {
-  position: absolute; top: calc(50% - min(38vw, 26svh) - 12px);
-  left: 50%; transform: translateX(-50%);
-  width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent;
-  border-top: 24px solid #fff; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); z-index: 3;
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 11px solid transparent; border-right: 11px solid transparent;
+  border-top: 26px solid #fff;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.8)) drop-shadow(0 2px 6px rgba(0,0,0,.7));
+  z-index: 3;
 }
 
-.wheel-handle-wrap {
-  position: absolute; right: max(12px, calc(50% - min(38vw,26svh) - 56px)); top: 50%;
-  transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 4;
+/* Spin button */
+.btn-spin-wheel {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: linear-gradient(135deg, var(--orange-dim), var(--orange));
+  color: #fff; border: none; border-radius: 28px;
+  padding: 13px 42px; font-family: 'Rajdhani','Inter',sans-serif;
+  font-size: 1.1rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+  cursor: pointer; flex-shrink: 0;
+  box-shadow: 0 4px 22px rgba(249,115,22,.4), 0 1px 0 rgba(255,255,255,.12) inset;
+  transition: transform .12s, box-shadow .15s, opacity .15s;
 }
-.wheel-handle-track { width: 22px; height: 100px; background: var(--bg3); border: 1px solid var(--border); border-radius: 11px; position: relative; }
-.wheel-handle-knob {
-  width: 36px; height: 36px; background: var(--bg4); border: 2px solid var(--blue); border-radius: 50%;
-  position: absolute; left: 50%; transform: translateX(-50%) translateY(0px);
-  display: flex; align-items: center; justify-content: center; cursor: grab; color: var(--blue);
-  touch-action: none; user-select: none; box-shadow: var(--glow-blue);
-}
-.wheel-handle-knob svg { width: 16px; height: 16px; }
-.wheel-handle-label { font-size: .6rem; font-weight: 800; letter-spacing: .12em; color: var(--text3); text-transform: uppercase; }
-
-.wheel-tap-hint { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: .78rem; color: var(--text3); letter-spacing: .06em; pointer-events: none; transition: opacity .3s; }
-.wheel-tap-hint.hidden { opacity: 0; }
+.btn-spin-wheel:hover  { transform: scale(1.05); box-shadow: 0 6px 30px rgba(249,115,22,.55); }
+.btn-spin-wheel:active { transform: scale(.95); }
+.btn-spin-wheel:disabled { opacity: .42; cursor: default; transform: none; box-shadow: none; }
 
 .wheel-winner {
   position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -532,6 +542,111 @@ body {
 .empty-state { text-align: center; padding: 32px 20px; color: var(--text3); font-size: .88rem; line-height: 1.6; }
 .page-content { flex: 1; overflow-y: auto; }
 .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+/* ====================================================
+   THE GAUNTLET — Quick-Draw Reflex Game
+   ==================================================== */
+.gauntlet-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0; overflow: hidden; position: relative;
+  background: var(--bg0);
+}
+
+/* Background arena glow */
+.gauntlet-arena-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 60%, rgba(239,68,68,.07) 0%, transparent 65%);
+  transition: background .3s;
+}
+.gauntlet-arena-bg.flash {
+  background: radial-gradient(ellipse at 50% 60%, rgba(239,68,68,.32) 0%, transparent 55%);
+}
+
+/* Silhouettes */
+.gauntlet-fighters {
+  display: flex; align-items: flex-end; justify-content: center; gap: 0;
+  width: 100%; max-width: 400px; flex-shrink: 0; position: relative; z-index: 2;
+}
+.gauntlet-fighter-svg { width: 44%; max-width: 160px; height: auto; flex-shrink: 0; }
+.gauntlet-fighter-svg.right { transform: scaleX(-1); }
+
+/* VS label */
+.gauntlet-vs {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 1.5rem; font-weight: 900;
+  color: var(--red); letter-spacing: .1em; align-self: center;
+  text-shadow: 0 0 20px rgba(239,68,68,.6); flex-shrink: 0; width: 12%;
+  text-align: center;
+}
+
+/* State panel — stacked over arena */
+.gauntlet-state {
+  position: relative; z-index: 3; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 0 24px 32px;
+}
+.gauntlet-title {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 1.6rem; font-weight: 900;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.gauntlet-sub { font-size: .82rem; color: var(--text2); line-height: 1.5; max-width: 260px; }
+
+/* DRAW cue */
+.gauntlet-cue {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 3.2rem; font-weight: 900;
+  color: var(--red); letter-spacing: .08em; text-transform: uppercase;
+  text-shadow: 0 0 40px rgba(239,68,68,.8), 0 0 80px rgba(239,68,68,.4);
+  animation: cue-pop .18s cubic-bezier(.2,1.6,.4,1) both;
+  line-height: 1;
+}
+@keyframes cue-pop {
+  from { transform: scale(.4); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.gauntlet-countdown {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 1.1rem; font-weight: 700;
+  color: var(--text3); letter-spacing: .14em; text-transform: uppercase;
+}
+
+/* Result */
+.gauntlet-result-time {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 3rem; font-weight: 900; color: #fff;
+  line-height: 1;
+}
+.gauntlet-result-ms { font-size: 1rem; color: var(--text2); font-weight: 600; letter-spacing: .06em; }
+.gauntlet-rank {
+  font-family: 'Rajdhani','Inter',sans-serif; font-size: 1.4rem; font-weight: 900;
+  letter-spacing: .1em; text-transform: uppercase; padding: 6px 22px;
+  border-radius: 30px; border: 2px solid;
+}
+.gauntlet-rank.S { color: #f5c842; border-color: #f5c842; text-shadow: 0 0 20px rgba(245,200,66,.6); }
+.gauntlet-rank.A { color: var(--blue); border-color: var(--blue); }
+.gauntlet-rank.B { color: var(--green); border-color: var(--green); }
+.gauntlet-rank.C { color: var(--orange); border-color: var(--orange); }
+.gauntlet-rank.D { color: var(--text2); border-color: var(--text3); }
+.gauntlet-rank.early { color: var(--red); border-color: var(--red); }
+
+.gauntlet-best { font-size: .75rem; color: var(--text3); letter-spacing: .06em; }
+.gauntlet-best span { color: var(--silver); font-weight: 700; }
+
+/* Big tap target during DRAW phase */
+.gauntlet-tap-zone {
+  position: absolute; inset: 0; z-index: 10; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Leaderboard */
+.gauntlet-scores {
+  width: 100%; max-width: 280px; display: flex; flex-direction: column; gap: 5px;
+}
+.gauntlet-score-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 7px 12px; font-size: .8rem;
+}
+.gauntlet-score-num { color: var(--text3); font-weight: 700; width: 18px; flex-shrink: 0; }
+.gauntlet-score-time { flex: 1; font-family: 'Rajdhani','Inter',sans-serif; font-size: .95rem; font-weight: 700; color: var(--text1); }
+.gauntlet-score-rank { font-size: .7rem; font-weight: 800; letter-spacing: .06em; }
 
 /* ====================================================
    RESPONSIVE
