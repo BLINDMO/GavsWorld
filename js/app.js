@@ -138,10 +138,11 @@
     const hairColorGrid = hairColorSec.querySelector('#ac-hair-color-grid');
     Avatar.HAIR_COLORS.forEach(c => {
       const sw = document.createElement('div');
-      sw.className = 'swatch' + (avatarCreatorState.hairColor === c ? ' active' : '');
-      sw.style.background = c;
+      sw.className = 'swatch' + (avatarCreatorState.hairColor === c.hex ? ' active' : '');
+      sw.style.background = c.hex;
+      sw.title = c.name;
       sw.addEventListener('click', () => {
-        avatarCreatorState.hairColor = c;
+        avatarCreatorState.hairColor = c.hex;
         hairColorGrid.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s === sw));
         Avatar.update(avatarPreviewEl, avatarCreatorState);
       });
@@ -242,6 +243,8 @@
     page.querySelector('#wheel-landing').style.display = 'none';
     page.querySelector('#wheel-saved-screen').style.display = 'none';
     page.querySelector('#wheel-screen').style.display = 'flex';
+    const outerHdr = page.querySelector('#wheel-page-header');
+    if (outerHdr) outerHdr.style.display = 'none';
 
     currentWheelData = wheelData;
     const nameEl = page.querySelector('#wheel-current-name');
@@ -284,6 +287,8 @@
     page.querySelector('#wheel-screen').style.display = 'none';
     const savedScreen = page.querySelector('#wheel-saved-screen');
     savedScreen.style.display = 'flex';
+    const outerHdr = page.querySelector('#wheel-page-header');
+    if (outerHdr) outerHdr.style.display = 'none';
 
     const grid = page.querySelector('#wheels-grid');
     grid.innerHTML = '';
@@ -401,16 +406,16 @@
     });
   }
 
-  /* ---- Gauntlet module ---- */
-  function openGauntletPage() {
-    showPage('gauntlet', () => {
-      const page = getPage('gauntlet');
-      const mountEl = page.querySelector('#gauntlet-mount');
+  /* ---- Loot Drop module ---- */
+  function openLootPage() {
+    showPage('loot', () => {
+      const page = getPage('loot');
+      const mountEl = page.querySelector('#loot-mount');
       if (!mountEl.dataset.mounted) {
-        Gauntlet.mount(mountEl);
+        Loot.mount(mountEl);
         mountEl.dataset.mounted = '1';
       } else {
-        Gauntlet.reset();
+        Loot.reset();
       }
     });
   }
@@ -430,10 +435,10 @@
     document.querySelectorAll('.module-tile').forEach(tile => {
       tile.addEventListener('click', () => {
         const mod = tile.dataset.module;
-        if (mod === 'scroll')    openScrollPage();
-        if (mod === 'wheel')     openWheelPage();
-        if (mod === 'forge')     openForgePage();
-        if (mod === 'gauntlet')  openGauntletPage();
+        if (mod === 'scroll')  openScrollPage();
+        if (mod === 'wheel')   openWheelPage();
+        if (mod === 'forge')   openForgePage();
+        if (mod === 'loot')    openLootPage();
       });
     });
 
@@ -509,10 +514,14 @@
       wheelPage.querySelector('#btn-back-wheel-screen').addEventListener('click', () => {
         wheelPage.querySelector('#wheel-screen').style.display = 'none';
         wheelPage.querySelector('#wheel-landing').style.display = 'flex';
+        const outerHdr = wheelPage.querySelector('#wheel-page-header');
+        if (outerHdr) outerHdr.style.display = 'flex';
       });
       wheelPage.querySelector('#btn-back-saved').addEventListener('click', () => {
         wheelPage.querySelector('#wheel-saved-screen').style.display = 'none';
         wheelPage.querySelector('#wheel-landing').style.display = 'flex';
+        const outerHdr = wheelPage.querySelector('#wheel-page-header');
+        if (outerHdr) outerHdr.style.display = 'flex';
       });
       wheelPage.querySelector('#btn-save-wheel').addEventListener('click', () => {
         if (!currentWheelData) return;
@@ -548,10 +557,10 @@
       forgePage.querySelector('#btn-back-forge').addEventListener('click', goHome);
     }
 
-    /* Gauntlet page: back */
-    const gauntletPage = getPage('gauntlet');
-    if (gauntletPage) {
-      gauntletPage.querySelector('#btn-back-gauntlet').addEventListener('click', goHome);
+    /* Loot page: back */
+    const lootPage = getPage('loot');
+    if (lootPage) {
+      lootPage.querySelector('#btn-back-loot').addEventListener('click', goHome);
     }
 
     /* Render home avatar after all scripts loaded */

@@ -645,9 +645,9 @@ const Avatar = (() => {
     /* Eyebrows */
     const brows = `
       <!-- left brow -->
-      <path d="M -38 -30 Q -26 -36 -14 -32" fill="none" stroke="${browColor}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M -38 -30 Q -26 -38 -14 -32" fill="none" stroke="${browColor}" stroke-width="3.2" stroke-linecap="round"/>
       <!-- right brow -->
-      <path d="M 14 -32 Q 26 -36 38 -30" fill="none" stroke="${browColor}" stroke-width="2.4" stroke-linecap="round"/>`;
+      <path d="M 14 -32 Q 26 -38 38 -30" fill="none" stroke="${browColor}" stroke-width="3.2" stroke-linecap="round"/>`;
 
     /* Collar / neck */
     const collar = `
@@ -665,10 +665,14 @@ const Avatar = (() => {
       <!-- collar highlight -->
       <path d="M -28 76 Q -14 72 0 74" fill="none" stroke="#2e5a8f" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>`;
 
-    /* Face shadow for dimensionality (subtle gradient on left side) */
+    /* Face shadow for dimensionality */
     const faceShadow = `
-      <!-- subtle face shadow on right side for dimensionality -->
-      <path d="M 44 8 Q 50 -28 40 -54 Q 30 -20 32 8 Q 36 30 36 38" fill="${shadow}" opacity=".22"/>`;
+      <!-- right-side shadow -->
+      <path d="M 44 8 Q 50 -28 40 -54 Q 28 -18 30 8 Q 34 32 34 40" fill="${shadow2}" opacity=".38"/>
+      <!-- chin shadow -->
+      <ellipse cx="0" cy="36" rx="28" ry="8" fill="${shadow2}" opacity=".28"/>
+      <!-- left cheek highlight -->
+      <ellipse cx="-16" cy="-4" rx="12" ry="9" fill="${GWColor.shade(skin, 18)}" opacity=".32" transform="rotate(-10,-16,-4)"/>`;
 
     /* Defs */
     const defs = `
@@ -680,8 +684,9 @@ const Avatar = (() => {
             <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
-        <radialGradient id="face-highlight" cx="38%" cy="35%" r="55%">
-          <stop offset="0%" stop-color="#fff" stop-opacity="0.18"/>
+        <radialGradient id="face-highlight" cx="36%" cy="32%" r="52%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.28"/>
+          <stop offset="60%" stop-color="#fff" stop-opacity="0.06"/>
           <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
         </radialGradient>
       </defs>`;
