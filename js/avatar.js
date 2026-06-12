@@ -124,79 +124,153 @@ const Avatar = (() => {
       </g>`,
   };
 
-  /* ---------- Hair styles (drawn relative to head center, head at y=0) ---------- */
-  /* Head top at approx y=-38, chin at y=26, head width ~56 */
+  /* ---------- Hair styles — anime-quality with highlights & strands ---------- */
+  /* Coord space: head face top≈y=-52, chin≈y=12, width≈52px, within head group */
   const HAIR_STYLES = {
-    spiky: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M 0 -38 C -28 -30 -30 -15 -28 5 C -26 -8 -20 -16 -14 -20 C -20 -28 -22 -36 -18 -44 C -12 -40 -8 -38 0 -38 Z"/>
-        <path d="M 0 -38 C 28 -30 30 -15 28 5 C 26 -8 20 -16 14 -20 C 20 -28 22 -36 18 -44 C 12 -40 8 -38 0 -38 Z"/>
-        <path d="M 0 -38 C -6 -50 -4 -58 0 -62 C 4 -58 6 -50 0 -38 Z"/>
-        <path d="M -12 -36 C -16 -48 -14 -56 -10 -58 C -7 -52 -6 -44 -8 -38 Z"/>
-        <path d="M 12 -36 C 16 -48 14 -56 10 -58 C 7 -52 6 -44 8 -38 Z"/>
-        <path d="M -18 -30 C -24 -42 -20 -50 -16 -50 C -14 -44 -14 -38 -16 -32 Z"/>
-        <path d="M 18 -30 C 24 -42 20 -50 16 -50 C 14 -44 14 -38 16 -32 Z"/>
-      </g>`,
 
-    long: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M -28 -8 C -32 -28 -28 -44 -20 -44 L -18 -10 Z"/>
-        <path d="M 28 -8 C 32 -28 28 -44 20 -44 L 18 -10 Z"/>
-        <path d="M -28 -8 C -30 20 -26 60 -22 90 C -18 60 -16 20 -18 -8 Z" opacity=".9"/>
-        <path d="M 28 -8 C 30 20 26 60 22 90 C 18 60 16 20 18 -8 Z" opacity=".9"/>
-        <path d="M -20 -44 C -28 -44 -32 -32 -28 -8 C -24 -36 -16 -42 0 -44 C 16 -42 24 -36 28 -8 C 32 -32 28 -44 20 -44 C 14 -46 8 -48 0 -48 C -8 -48 -14 -46 -20 -44 Z"/>
-      </g>`,
+    spiky: (c) => {
+      const hi = GWColor.shade(c, 0.42);
+      const dk = GWColor.shade(c, -0.28);
+      return `<g class="hair">
+        <path d="M -26 4 C -30 -18 -28 -38 -18 -46 L 18 -46 C 28 -38 30 -18 26 4 C 20 -12 10 -24 0 -26 C -10 -24 -20 -12 -26 4 Z" fill="${c}"/>
+        <path d="M -3 -46 C -4 -58 -2 -68 0 -74 C 2 -68 4 -58 3 -46 Z" fill="${c}"/>
+        <path d="M -12 -46 C -15 -57 -12 -65 -10 -67 C -8 -62 -6 -55 -9 -46 Z" fill="${c}"/>
+        <path d="M 12 -46 C 15 -57 12 -65 10 -67 C 8 -62 6 -55 9 -46 Z" fill="${c}"/>
+        <path d="M -20 -42 C -26 -54 -23 -62 -20 -62 C -17 -56 -16 -49 -18 -42 Z" fill="${c}"/>
+        <path d="M 20 -42 C 26 -54 23 -62 20 -62 C 17 -56 16 -49 18 -42 Z" fill="${c}"/>
+        <path d="M -26 4 C -34 14 -32 28 -28 38 C -26 24 -26 12 -28 4 Z" fill="${c}"/>
+        <path d="M 26 4 C 34 14 32 28 28 38 C 26 24 26 12 28 4 Z" fill="${c}"/>
+        <path d="M -26 4 C -28 -4 -28 -16 -26 -26 L -22 -22 C -22 -10 -22 0 -24 6 Z" fill="${dk}" opacity=".28"/>
+        <path d="M 26 4 C 28 -4 28 -16 26 -26 L 22 -22 C 22 -10 22 0 24 6 Z" fill="${dk}" opacity=".28"/>
+        <line x1="0" y1="-72" x2="0" y2="-48" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
+        <line x1="-10" y1="-65" x2="-8" y2="-48" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".65"/>
+        <line x1="10" y1="-65" x2="8" y2="-48" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".65"/>
+        <line x1="-20" y1="-60" x2="-18" y2="-44" stroke="${hi}" stroke-width=".8" stroke-linecap="round" opacity=".5"/>
+        <line x1="20" y1="-60" x2="18" y2="-44" stroke="${hi}" stroke-width=".8" stroke-linecap="round" opacity=".5"/>
+        <path d="M -10 -46 C -14 -38 -16 -26 -16 -16" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+        <path d="M 10 -46 C 14 -38 16 -26 16 -16" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+      </g>`;
+    },
 
-    bun: (c) => `
-      <g class="hair" fill="${c}">
-        <ellipse cx="0" cy="-48" rx="14" ry="12"/>
-        <circle cx="14" cy="-48" r="8"/>
-        <path d="M -28 -8 C -32 -28 -28 -44 0 -46 C 28 -44 32 -28 28 -8 C 22 -32 10 -42 0 -42 C -10 -42 -22 -32 -28 -8 Z"/>
-        <path d="M -22 -10 C -26 8 -24 18 -22 20 C -20 12 -18 4 -22 -10 Z" opacity=".85"/>
-        <path d="M 22 -10 C 26 8 24 18 22 20 C 20 12 18 4 22 -10 Z" opacity=".85"/>
-      </g>`,
+    long: (c) => {
+      const hi = GWColor.shade(c, 0.36);
+      const dk = GWColor.shade(c, -0.25);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 8 -30 42 -26 72 C -22 42 -20 8 -22 -8 Z" fill="${c}"/>
+        <path d="M 28 -8 C 32 8 30 42 26 72 C 22 42 20 8 22 -8 Z" fill="${c}"/>
+        <path d="M -22 -44 C -30 -44 -32 -28 -28 -8 C -24 -28 -16 -38 0 -44 C 16 -38 24 -28 28 -8 C 32 -28 30 -44 22 -44 C 14 -48 8 -50 0 -50 C -8 -50 -14 -48 -22 -44 Z" fill="${c}"/>
+        <path d="M -28 -8 C -30 8 -28 40 -26 68 L -24 66 C -26 38 -26 6 -24 -8 Z" fill="${hi}" opacity=".35"/>
+        <path d="M 28 -8 C 30 8 28 40 26 68 L 24 66 C 26 38 26 6 24 -8 Z" fill="${hi}" opacity=".35"/>
+        <path d="M -6 -50 L -6 14" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
+        <path d="M 6 -50 L 6 14" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
+        <path d="M -14 -48 C -12 -38 -10 -24 -10 -8" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+        <path d="M 14 -48 C 12 -38 10 -24 10 -8" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
+        <path d="M -28 -8 C -30 0 -28 8 -26 12 L -24 10 C -24 4 -24 -2 -26 -8 Z" fill="${dk}" opacity=".28"/>
+        <path d="M 28 -8 C 30 0 28 8 26 12 L 24 10 C 24 4 24 -2 26 -8 Z" fill="${dk}" opacity=".28"/>
+      </g>`;
+    },
 
-    short: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 12 -30 0 -30 C -12 -30 -22 -22 -28 -8 Z"/>
-        <path d="M -28 -8 C -34 0 -32 8 -28 10 C -24 2 -24 -4 -28 -8 Z" opacity=".9"/>
-        <path d="M 28 -8 C 34 0 32 8 28 10 C 24 2 24 -4 28 -8 Z" opacity=".9"/>
-      </g>`,
+    bun: (c) => {
+      const hi = GWColor.shade(c, 0.36);
+      const dk = GWColor.shade(c, -0.25);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -28 10 -40 0 -42 C -10 -40 -22 -28 -28 -8 Z" fill="${c}"/>
+        <ellipse cx="12" cy="-54" rx="13" ry="11" fill="${c}"/>
+        <ellipse cx="4" cy="-62" rx="9" ry="8" fill="${c}"/>
+        <circle cx="18" cy="-50" r="6.5" fill="${c}"/>
+        <path d="M 8 -44 C 10 -52 18 -58 22 -56 C 20 -52 16 -48 12 -46" fill="${c}"/>
+        <path d="M 6 -68 Q 12 -62 14 -54" fill="none" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+        <ellipse cx="11" cy="-56" rx="9" ry="7" fill="${hi}" opacity=".22"/>
+        <path d="M -18 -44 L -22 4" stroke="${hi}" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+        <path d="M -22 -10 C -26 4 -24 16 -22 20 C -20 10 -20 0 -22 -10 Z" fill="${dk}" opacity=".3"/>
+        <path d="M 22 -10 C 26 4 24 16 22 20 C 20 10 20 0 22 -10 Z" fill="${dk}" opacity=".3"/>
+      </g>`;
+    },
 
-    ponytail: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -32 0 -32 C -10 -32 -22 -24 -28 -8 Z"/>
-        <path d="M 20 -26 C 32 -20 36 -8 34 4 C 40 -10 38 -24 28 -30 Z"/>
-        <path d="M 28 -8 C 36 4 36 24 30 48 C 26 36 22 18 22 -4 C 24 -4 26 -6 28 -8 Z"/>
-        <ellipse cx="26" cy="-24" rx="6" ry="4" transform="rotate(30 26 -24)"/>
-      </g>`,
+    short: (c) => {
+      const hi = GWColor.shade(c, 0.42);
+      const dk = GWColor.shade(c, -0.3);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 10 -32 0 -32 C -10 -32 -22 -22 -28 -8 Z" fill="${c}"/>
+        <path d="M -28 -8 C -34 0 -32 10 -28 13 C -24 4 -24 -3 -28 -8 Z" fill="${c}"/>
+        <path d="M 28 -8 C 34 0 32 10 28 13 C 24 4 24 -3 28 -8 Z" fill="${c}"/>
+        <path d="M -6 -46 C -2 -50 2 -50 6 -46 C 2 -44 -2 -44 -6 -46 Z" fill="${hi}" opacity=".55"/>
+        <line x1="0" y1="-48" x2="0" y2="-30" stroke="${hi}" stroke-width="1.4" stroke-linecap="round" opacity=".6"/>
+        <line x1="-14" y1="-46" x2="-14" y2="-28" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".45"/>
+        <line x1="14" y1="-46" x2="14" y2="-28" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".45"/>
+        <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".28"/>
+        <path d="M 28 -8 C 30 -2 30 4 28 8 L 26 6 C 26 0 26 -4 28 -8 Z" fill="${dk}" opacity=".28"/>
+      </g>`;
+    },
 
-    swept: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M -28 -8 C -32 -28 -22 -48 8 -50 C 28 -48 34 -28 28 -8 C 18 -26 4 -34 -4 -32 C -14 -30 -22 -20 -28 -8 Z"/>
-        <path d="M 8 -50 C 24 -52 36 -40 34 -22 C 28 -36 18 -40 8 -38 Z" opacity=".85"/>
-        <path d="M -30 -6 C -38 4 -36 14 -30 18 C -28 8 -28 0 -30 -6 Z" opacity=".9"/>
-        <path d="M 28 -8 C 32 2 30 10 26 12 C 24 4 24 -2 28 -8 Z" opacity=".85"/>
-      </g>`,
+    ponytail: (c) => {
+      const hi = GWColor.shade(c, 0.36);
+      const dk = GWColor.shade(c, -0.25);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -34 0 -34 C -10 -34 -22 -24 -28 -8 Z" fill="${c}"/>
+        <path d="M 24 -28 C 34 -22 38 -8 36 6 L 30 4 C 32 -6 30 -18 24 -24 Z" fill="${c}"/>
+        <path d="M 28 -8 C 38 6 38 28 32 54 C 28 40 24 22 26 2 C 26 -2 26 -6 28 -8 Z" fill="${c}"/>
+        <path d="M 30 -8 C 38 6 38 28 32 54 L 30 50 C 34 24 32 4 30 -8 Z" fill="${dk}" opacity=".25"/>
+        <ellipse cx="28" cy="-26" rx="5.5" ry="4" transform="rotate(20 28 -26)" fill="${c}"/>
+        <line x1="-6" y1="-48" x2="-6" y2="-8" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
+        <line x1="6" y1="-48" x2="8" y2="-8" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".4"/>
+        <path d="M 30 -4 C 34 10 34 30 30 50" stroke="${hi}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".45"/>
+        <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".28"/>
+      </g>`;
+    },
 
-    twoblock: (c, c2 = '#1a1a1a') => `
-      <g class="hair">
-        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -32 0 -32 C -10 -32 -22 -24 -28 -8 Z" fill="${c2}"/>
-        <path d="M -28 -8 C -30 0 -28 8 -24 12 L -22 -6 Z" fill="${c2}" opacity=".9"/>
-        <path d="M 28 -8 C 30 0 28 8 24 12 L 22 -6 Z" fill="${c2}" opacity=".9"/>
-        <path d="M -20 -44 C -14 -50 14 -50 20 -44 C 8 -46 -8 -46 -20 -44 Z" fill="${c}"/>
-        <path d="M -20 -44 C -28 -32 -28 -18 -26 -8 L -18 -8 C -16 -20 -14 -34 -12 -38 C -6 -44 6 -44 12 -38 C 14 -34 16 -20 18 -8 L 26 -8 C 28 -18 28 -32 20 -44 Z" fill="${c}" opacity=".9"/>
-      </g>`,
+    swept: (c) => {
+      const hi = GWColor.shade(c, 0.36);
+      const dk = GWColor.shade(c, -0.28);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -18 -48 10 -50 C 28 -48 34 -28 28 -8 C 18 -26 4 -34 -4 -30 C -14 -28 -22 -18 -28 -8 Z" fill="${c}"/>
+        <path d="M 10 -50 C 26 -52 38 -40 36 -22 C 28 -36 18 -40 10 -36 Z" fill="${c}" opacity=".88"/>
+        <path d="M -30 -6 C -38 4 -36 16 -30 20 C -28 8 -28 0 -30 -6 Z" fill="${c}"/>
+        <path d="M 28 -8 C 32 2 30 12 26 16 C 24 6 24 -2 28 -8 Z" fill="${c}"/>
+        <path d="M -14 -46 C -6 -52 10 -52 20 -48" stroke="${hi}" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".7"/>
+        <path d="M 24 -46 C 30 -36 32 -26 30 -16" stroke="${hi}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>
+        <line x1="2" y1="-50" x2="4" y2="-16" stroke="${hi}" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+        <path d="M -30 -6 C -36 2 -36 12 -32 18 L -30 14 C -30 6 -30 -2 -30 -6 Z" fill="${hi}" opacity=".28"/>
+        <path d="M -28 -8 C -30 -4 -30 2 -28 6 L -26 4 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".22"/>
+      </g>`;
+    },
 
-    warrior: (c) => `
-      <g class="hair" fill="${c}">
-        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 10 -30 0 -30 C -10 -30 -22 -22 -28 -8 Z"/>
-        <path d="M -6 -48 C -4 -60 -2 -70 0 -76 C 2 -70 4 -60 6 -48 Z"/>
-        <path d="M -14 -44 C -16 -56 -14 -64 -12 -68 C -10 -62 -8 -54 -8 -46 Z" opacity=".9"/>
-        <path d="M 14 -44 C 16 -56 14 -64 12 -68 C 10 -62 8 -54 8 -46 Z" opacity=".9"/>
-        <path d="M -30 -6 C -34 8 -30 24 -26 32 C -24 18 -24 4 -28 -8 Z"/>
-        <path d="M 30 -6 C 34 8 30 24 26 32 C 24 18 24 4 28 -8 Z"/>
-      </g>`,
+    twoblock: (c, c2 = '#1a1a1a') => {
+      const hi = GWColor.shade(c, 0.38);
+      const hi2 = GWColor.shade(c2, 0.28);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -34 0 -34 C -10 -34 -22 -24 -28 -8 Z" fill="${c2}"/>
+        <path d="M -28 -8 C -30 0 -28 8 -24 12 L -22 6 C -22 -2 -24 -6 -26 -8 Z" fill="${c2}"/>
+        <path d="M 28 -8 C 30 0 28 8 24 12 L 22 6 C 22 -2 24 -6 26 -8 Z" fill="${c2}"/>
+        <path d="M -20 -44 C -14 -50 14 -50 20 -44 C 8 -48 -8 -48 -20 -44 Z" fill="${c}"/>
+        <path d="M -20 -44 C -28 -32 -28 -18 -26 -8 L -18 -8 C -16 -20 -14 -34 -12 -38 C -6 -44 6 -44 12 -38 C 14 -34 16 -20 18 -8 L 26 -8 C 28 -18 28 -32 20 -44 Z" fill="${c}" opacity=".92"/>
+        <path d="M -4 -50 C -2 -48 2 -48 4 -50 L 2 -46 L -2 -46 Z" fill="${hi}" opacity=".5"/>
+        <line x1="-2" y1="-48" x2="0" y2="-10" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>
+        <line x1="8" y1="-48" x2="10" y2="-10" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".4"/>
+        <line x1="-26" y1="-8" x2="-26" y2="8" stroke="${hi2}" stroke-width="1" stroke-linecap="round" opacity=".35"/>
+        <line x1="26" y1="-8" x2="26" y2="8" stroke="${hi2}" stroke-width="1" stroke-linecap="round" opacity=".35"/>
+      </g>`;
+    },
+
+    warrior: (c) => {
+      const hi = GWColor.shade(c, 0.38);
+      const dk = GWColor.shade(c, -0.25);
+      return `<g class="hair">
+        <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 10 -30 0 -30 C -10 -30 -22 -22 -28 -8 Z" fill="${c}"/>
+        <path d="M -6 -48 C -4 -60 -2 -70 0 -76 C 2 -70 4 -60 6 -48 Z" fill="${c}"/>
+        <path d="M -14 -44 C -16 -56 -14 -64 -12 -68 C -10 -62 -8 -54 -10 -46 Z" fill="${c}" opacity=".9"/>
+        <path d="M 14 -44 C 16 -56 14 -64 12 -68 C 10 -62 8 -54 10 -46 Z" fill="${c}" opacity=".9"/>
+        <path d="M -30 -6 C -36 8 -32 26 -28 34 C -24 20 -24 4 -28 -8 Z" fill="${c}"/>
+        <path d="M 30 -6 C 36 8 32 26 28 34 C 24 20 24 4 28 -8 Z" fill="${c}"/>
+        <path d="M -30 -6 C -36 6 -34 18 -30 26 L -28 22 C -30 10 -28 0 -28 -8 Z" fill="${hi}" opacity=".3"/>
+        <path d="M 30 -6 C 36 6 34 18 30 26 L 28 22 C 30 10 28 0 28 -8 Z" fill="${hi}" opacity=".3"/>
+        <line x1="0" y1="-74" x2="0" y2="-50" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
+        <line x1="-12" y1="-66" x2="-10" y2="-48" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
+        <line x1="12" y1="-66" x2="10" y2="-48" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
+        <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".3"/>
+        <path d="M 28 -8 C 30 -2 30 4 28 8 L 26 6 C 26 0 26 -4 28 -8 Z" fill="${dk}" opacity=".3"/>
+      </g>`;
+    },
   };
 
   /* ---------- Costumes ---------- */

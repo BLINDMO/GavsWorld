@@ -30,6 +30,10 @@ const Forge = (() => {
 
   let state = DEFAULT_STATE();
   let forgeSvgEl = null;
+  let swordCloseupSvgEl = null;
+  let swordCloseupNameEl = null;
+  let forgeContainer = null;
+  let swordTabActive = true;
 
   /* ---- Build sword config from state ---- */
   function swordCfg() {
@@ -67,28 +71,56 @@ const Forge = (() => {
   function refresh() {
     if (!forgeSvgEl) return;
     Avatar.update(forgeSvgEl, avatarCfg(false));
+    updateSwordCloseup();
+  }
+
+  /* ---- Update the zoomed sword preview ---- */
+  function updateSwordCloseup() {
+    if (!swordCloseupSvgEl) return;
+    const cfg = swordCfg();
+    const { g, def } = Swords.buildGroup(cfg);
+    const [bx, by, bw, bh] = def.box;
+    swordCloseupSvgEl.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
+    const aspect = bw / bh;
+    const svgH = 170;
+    const svgW = Math.round(svgH * aspect);
+    swordCloseupSvgEl.style.height = svgH + 'px';
+    swordCloseupSvgEl.style.width = Math.max(40, svgW) + 'px';
+    swordCloseupSvgEl.innerHTML = g;
+    if (swordCloseupNameEl) swordCloseupNameEl.textContent = def.name;
   }
 
   /* ---- Build the Forge UI into a container element ---- */
   function mount(container) {
+    forgeContainer = container;
+    swordTabActive = true;
+
     container.innerHTML = `
       <div class="forge-layout">
 
-        <!-- Stage: character preview + pose buttons -->
+        <!-- Stage: sword closeup + character preview + pose buttons -->
         <div class="forge-stage">
           <div class="forge-stage-bg"></div>
-          <div class="forge-char-wrap">
+
+          <!-- Sword close-up (visible when Sword tab active) -->
+          <div class="forge-sword-closeup visible" id="forge-sword-closeup">
+            <svg id="forge-sword-closeup-svg" xmlns="http://www.w3.org/2000/svg" class="forge-sword-closeup-svg"></svg>
+            <div class="forge-sword-closeup-name" id="forge-sword-closeup-name"></div>
+          </div>
+
+          <!-- Character (visible when Style/Armory tab active) -->
+          <div class="forge-char-wrap hidden" id="forge-char-wrap">
             <svg class="forge-char-svg avatar-svg" viewBox="-80 -240 160 380" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
-          <div class="forge-poses" id="forge-poses"></div>
+          <div class="forge-poses hidden" id="forge-poses"></div>
         </div>
 
         <!-- Panel: tabbed customization -->
         <div class="forge-panel">
           <div class="forge-tabs">
-            <button class="forge-tab active" data-tab="sword">Sword</button>
-            <button class="forge-tab" data-tab="costume">Style</button>
-            <button class="forge-tab" data-tab="armory">Armory</button>
+            <button class="forge-tab active" data-tab="sword">⚔ Sword</button>
+            <button class="forge-tab" data-tab="costume">👘 Style</button>
+            <button class="forge-tab" data-tab="armory">🏛 Armory</button>
           </div>
           <div class="forge-tab-content active" data-content="sword" id="forge-sword-panel"></div>
           <div class="forge-tab-content" data-content="costume" id="forge-costume-panel"></div>
@@ -98,18 +130,36 @@ const Forge = (() => {
       </div>`;
 
     forgeSvgEl = container.querySelector('.forge-char-svg');
+    swordCloseupSvgEl = container.querySelector('#forge-sword-closeup-svg');
+    swordCloseupNameEl = container.querySelector('#forge-sword-closeup-name');
+
     buildPoses(container.querySelector('#forge-poses'));
     buildSwordPanel(container.querySelector('#forge-sword-panel'));
     buildCostumePanel(container.querySelector('#forge-costume-panel'));
     buildArmoryPanel(container.querySelector('#forge-armory-panel'));
 
-    /* Tab switching */
+    /* Tab switching — show sword closeup for Sword tab, character for Style/Armory */
     container.querySelectorAll('.forge-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         container.querySelectorAll('.forge-tab').forEach(b => b.classList.remove('active'));
         container.querySelectorAll('.forge-tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         container.querySelector(`[data-content="${btn.dataset.tab}"]`).classList.add('active');
+
+        swordTabActive = btn.dataset.tab === 'sword';
+        const closeupEl = container.querySelector('#forge-sword-closeup');
+        const charWrapEl = container.querySelector('#forge-char-wrap');
+        const posesEl = container.querySelector('#forge-poses');
+        if (swordTabActive) {
+          closeupEl.classList.add('visible');
+          charWrapEl.classList.add('hidden');
+          posesEl.classList.add('hidden');
+        } else {
+          closeupEl.classList.remove('visible');
+          charWrapEl.classList.remove('hidden');
+          posesEl.classList.remove('hidden');
+        }
+
         if (btn.dataset.tab === 'armory') refreshArmory(container.querySelector('#forge-armory-panel'));
       });
     });
@@ -117,10 +167,14 @@ const Forge = (() => {
     refresh();
   }
 
+  const POSE_ICONS = { idle: '🧍', battle: '⚔️', slash: '🌀', guard: '🛡️', victory: '✊', kneel: '🙇' };
+
   /* ---- Poses ---- */
   function buildPoses(el) {
     el.innerHTML = Object.entries(Avatar.POSES).map(([id, p]) =>
-      `<button class="pose-btn${state.pose === id ? ' active' : ''}" data-pose="${id}">${p.name}</button>`
+      `<button class="pose-btn${state.pose === id ? ' active' : ''}" data-pose="${id}">
+        <span class="pose-icon">${POSE_ICONS[id] || ''}</span>${p.name}
+      </button>`
     ).join('');
     el.addEventListener('click', e => {
       const btn = e.target.closest('.pose-btn');

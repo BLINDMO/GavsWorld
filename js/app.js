@@ -336,10 +336,20 @@
         const stage = page.querySelector('#wheel-stage');
         const winnerEl = page.querySelector('#wheel-winner');
         const winnerText = page.querySelector('#wheel-winner-text');
+        const tapHint = page.querySelector('.wheel-tap-hint');
         const label = typeof entry === 'string' ? entry : (entry.label || '');
         winnerText.textContent = label;
         winnerEl.classList.add('show');
+        if (tapHint) tapHint.classList.remove('hidden');
         Wheel.burst(stage);
+      });
+      /* tap canvas to spin */
+      activeWheelCanvas.addEventListener('click', () => {
+        if (!Wheel.spinning) {
+          const tapHint = page.querySelector('.wheel-tap-hint');
+          if (tapHint) tapHint.classList.add('hidden');
+          Wheel.launch(0.10 + Math.random() * 0.12);
+        }
       });
       wheelInited = true;
     }

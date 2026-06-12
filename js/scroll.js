@@ -41,7 +41,7 @@ const ScrollModule = (() => {
           <line x1="20" y1="28" x2="36" y2="28" stroke="#5a7096" stroke-width="2" stroke-linecap="round"/>
           <line x1="20" y1="36" x2="32" y2="36" stroke="#5a7096" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <p>No scrolls yet.<br>Tap <strong>+</strong> to write your first one.</p>
+        <p>No entries yet.<br>Tap <strong>+</strong> to write your first one.</p>
       </div>`;
       return;
     }
@@ -93,7 +93,7 @@ const ScrollModule = (() => {
     titleField.className = 'field-group';
     titleField.innerHTML = `
       <label class="field-label">Title</label>
-      <input class="field-input entry-title" type="text" placeholder="Name this scroll…" value="${escHtml(entry.title || '')}"/>`;
+      <input class="field-input entry-title" type="text" placeholder="Name this entry…" value="${escHtml(entry.title || '')}"/>`;
     body.appendChild(titleField);
 
     if (type === 'quest') {
@@ -121,7 +121,7 @@ const ScrollModule = (() => {
     });
 
     container.querySelector('.btn-delete-entry').addEventListener('click', () => {
-      if (!confirm('Delete this scroll?')) return;
+      if (!confirm('Delete this entry?')) return;
       const scrolls = Store.getScrolls().filter(s => s.id !== entry.id);
       Store.setScrolls(scrolls);
       onDelete();
