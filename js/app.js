@@ -72,26 +72,25 @@
     if (!page.querySelector('.avatar-preview-pane svg')) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'avatar-svg');
-      svg.setAttribute('viewBox', '-80 -240 160 380');
+      svg.setAttribute('viewBox', '-85 -110 170 200');
       previewPane.appendChild(svg);
     }
     avatarPreviewEl = page.querySelector('.avatar-preview-pane svg');
     Avatar.update(avatarPreviewEl, avatarCreatorState);
 
     /* build tabs if not built yet */
-    if (optionsPane.querySelector('.avatar-tab-content[data-content="appearance"]')) return;
+    if (optionsPane.querySelector('.avatar-tab-content[data-content="look"]')) return;
 
     const tabs = optionsPane.querySelector('.avatar-tabs');
     if (tabs) tabs.innerHTML = `
-      <button class="avatar-tab active" data-tab="appearance">Look</button>
-      <button class="avatar-tab" data-tab="outfit">Outfit</button>
-      <button class="avatar-tab" data-tab="loadout">Loadout</button>`;
+      <button class="avatar-tab active" data-tab="look">Look</button>
+      <button class="avatar-tab" data-tab="accessories">Accessories</button>`;
 
-    /* Appearance content */
-    const appearDiv = document.createElement('div');
-    appearDiv.className = 'avatar-tab-content active';
-    appearDiv.dataset.content = 'appearance';
-    appearDiv.style.display = 'flex';
+    /* ---- Look tab ---- */
+    const lookDiv = document.createElement('div');
+    lookDiv.className = 'avatar-tab-content active';
+    lookDiv.dataset.content = 'look';
+    lookDiv.style.display = 'flex';
 
     /* Skin tones */
     const skinSec = document.createElement('div');
@@ -109,30 +108,30 @@
       });
       skinGrid.appendChild(sw);
     });
-    appearDiv.appendChild(skinSec);
+    lookDiv.appendChild(skinSec);
 
-    /* Hair style */
+    /* Hair style chips */
     const hairStyleSec = document.createElement('div');
     hairStyleSec.className = 'field-group';
     hairStyleSec.innerHTML = `<div class="field-label">Hair Style</div>`;
-    const hairGrid = document.createElement('div');
-    hairGrid.className = 'hair-grid';
+    const hairChips = document.createElement('div');
+    hairChips.className = 'style-chips';
     Avatar.HAIR_STYLES.forEach(h => {
-      const btn = document.createElement('div');
-      btn.className = 'hair-choice' + (avatarCreatorState.hairStyle === h ? ' active' : '');
-      btn.dataset.hair = h;
-      btn.innerHTML = `<span style="font-size:.65rem;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;font-weight:600;">${h}</span>`;
-      btn.addEventListener('click', () => {
+      const chip = document.createElement('button');
+      chip.className = 'style-chip' + (avatarCreatorState.hairStyle === h ? ' active' : '');
+      chip.dataset.hair = h;
+      chip.textContent = h;
+      chip.addEventListener('click', () => {
         avatarCreatorState.hairStyle = h;
-        hairGrid.querySelectorAll('.hair-choice').forEach(b => b.classList.toggle('active', b.dataset.hair === h));
+        hairChips.querySelectorAll('.style-chip').forEach(c => c.classList.toggle('active', c.dataset.hair === h));
         Avatar.update(avatarPreviewEl, avatarCreatorState);
       });
-      hairGrid.appendChild(btn);
+      hairChips.appendChild(chip);
     });
-    hairStyleSec.appendChild(hairGrid);
-    appearDiv.appendChild(hairStyleSec);
+    hairStyleSec.appendChild(hairChips);
+    lookDiv.appendChild(hairStyleSec);
 
-    /* Hair color */
+    /* Hair color swatches */
     const hairColorSec = document.createElement('div');
     hairColorSec.className = 'field-group';
     hairColorSec.innerHTML = `<div class="field-label">Hair Color</div><div class="swatch-grid" id="ac-hair-color-grid"></div>`;
@@ -148,144 +147,68 @@
       });
       hairColorGrid.appendChild(sw);
     });
-    appearDiv.appendChild(hairColorSec);
+    lookDiv.appendChild(hairColorSec);
 
-    /* Eye style */
+    /* Eye style chips */
     const eyeStyleSec = document.createElement('div');
     eyeStyleSec.className = 'field-group';
     eyeStyleSec.innerHTML = `<div class="field-label">Eye Style</div>`;
-    const eyeGrid = document.createElement('div');
-    eyeGrid.className = 'eye-grid';
+    const eyeChips = document.createElement('div');
+    eyeChips.className = 'style-chips';
     Avatar.EYE_STYLES.forEach(e => {
-      const btn = document.createElement('div');
-      btn.className = 'eye-choice' + (avatarCreatorState.eyeStyle === e ? ' active' : '');
-      btn.dataset.eye = e;
-      btn.innerHTML = `<span style="font-size:.65rem;color:var(--text2);letter-spacing:.04em;text-transform:uppercase;font-weight:600;">${e}</span>`;
-      btn.addEventListener('click', () => {
+      const chip = document.createElement('button');
+      chip.className = 'style-chip' + (avatarCreatorState.eyeStyle === e ? ' active' : '');
+      chip.dataset.eye = e;
+      chip.textContent = e;
+      chip.addEventListener('click', () => {
         avatarCreatorState.eyeStyle = e;
-        eyeGrid.querySelectorAll('.eye-choice').forEach(b => b.classList.toggle('active', b.dataset.eye === e));
+        eyeChips.querySelectorAll('.style-chip').forEach(c => c.classList.toggle('active', c.dataset.eye === e));
         Avatar.update(avatarPreviewEl, avatarCreatorState);
       });
-      eyeGrid.appendChild(btn);
+      eyeChips.appendChild(chip);
     });
-    eyeStyleSec.appendChild(eyeGrid);
-    appearDiv.appendChild(eyeStyleSec);
+    eyeStyleSec.appendChild(eyeChips);
+    lookDiv.appendChild(eyeStyleSec);
 
     /* Eye color */
     const eyeColorSec = document.createElement('div');
     eyeColorSec.className = 'field-group';
     eyeColorSec.innerHTML = `<div class="field-label">Eye Color</div>
       <input type="color" class="color-picker-inline" value="${avatarCreatorState.eyeColor || '#2a5fc8'}"/>`;
-    eyeColorSec.querySelector('input').addEventListener('input', e => {
-      avatarCreatorState.eyeColor = e.target.value;
+    eyeColorSec.querySelector('input').addEventListener('input', ev => {
+      avatarCreatorState.eyeColor = ev.target.value;
       Avatar.update(avatarPreviewEl, avatarCreatorState);
     });
-    appearDiv.appendChild(eyeColorSec);
+    lookDiv.appendChild(eyeColorSec);
 
-    /* Outfit content */
-    const outfitDiv = document.createElement('div');
-    outfitDiv.className = 'avatar-tab-content';
-    outfitDiv.dataset.content = 'outfit';
-    outfitDiv.style.display = 'none';
+    /* ---- Accessories tab ---- */
+    const accDiv = document.createElement('div');
+    accDiv.className = 'avatar-tab-content';
+    accDiv.dataset.content = 'accessories';
+    accDiv.style.display = 'none';
 
-    const costSec = document.createElement('div');
-    costSec.className = 'field-group';
-    costSec.innerHTML = `<div class="field-label">Outfit</div>`;
-    const cosGrid = document.createElement('div');
-    cosGrid.className = 'costume-grid';
-    Object.entries(Avatar.COSTUMES).forEach(([id, cos]) => {
-      const card = document.createElement('div');
-      card.className = 'costume-card' + (avatarCreatorState.costume === id ? ' active' : '');
-      card.dataset.cos = id;
-      card.innerHTML = `<span class="costume-icon">${cos.icon}</span><span class="costume-name">${cos.name}</span>`;
-      card.addEventListener('click', () => {
-        avatarCreatorState.costume = id;
-        cosGrid.querySelectorAll('.costume-card').forEach(c => c.classList.toggle('active', c.dataset.cos === id));
-        Avatar.update(avatarPreviewEl, avatarCreatorState);
-      });
-      cosGrid.appendChild(card);
-    });
-    costSec.appendChild(cosGrid);
-    outfitDiv.appendChild(costSec);
-
-    /* Accessories */
     const accSec = document.createElement('div');
     accSec.className = 'field-group';
-    accSec.innerHTML = `<div class="field-label">Accessory</div>`;
+    accSec.innerHTML = `<div class="field-label">Face Accessory</div>`;
     const accGrid = document.createElement('div');
-    accGrid.className = 'costume-grid';
+    accGrid.className = 'acc-grid';
     Object.entries(Avatar.ACCESSORIES).forEach(([id, acc]) => {
       const card = document.createElement('div');
-      card.className = 'costume-card' + (avatarCreatorState.accessory === id ? ' active' : '');
+      card.className = 'acc-card' + (avatarCreatorState.accessory === id ? ' active' : '');
       card.dataset.acc = id;
-      card.innerHTML = `<span class="costume-icon">${acc.icon}</span><span class="costume-name">${acc.name}</span>`;
+      card.innerHTML = `<span class="acc-icon">${acc.icon}</span><span class="acc-name">${acc.name}</span>`;
       card.addEventListener('click', () => {
         avatarCreatorState.accessory = id;
-        accGrid.querySelectorAll('.costume-card').forEach(c => c.classList.toggle('active', c.dataset.acc === id));
+        accGrid.querySelectorAll('.acc-card').forEach(c => c.classList.toggle('active', c.dataset.acc === id));
         Avatar.update(avatarPreviewEl, avatarCreatorState);
       });
       accGrid.appendChild(card);
     });
     accSec.appendChild(accGrid);
-    outfitDiv.appendChild(accSec);
+    accDiv.appendChild(accSec);
 
-    /* Cape/aura color */
-    const capeColorSec = document.createElement('div');
-    capeColorSec.className = 'field-group';
-    capeColorSec.innerHTML = `<div class="field-label">Cape / Aura Color</div>
-      <input type="color" class="color-picker-inline" value="${avatarCreatorState.capeColor || '#1a2a6e'}"/>`;
-    capeColorSec.querySelector('input').addEventListener('input', e => {
-      avatarCreatorState.capeColor = e.target.value;
-      avatarCreatorState.auraColor = e.target.value;
-      Avatar.update(avatarPreviewEl, avatarCreatorState);
-    });
-    outfitDiv.appendChild(capeColorSec);
-
-    /* Loadout content (equip swords from armory) */
-    const loadoutDiv = document.createElement('div');
-    loadoutDiv.className = 'avatar-tab-content';
-    loadoutDiv.dataset.content = 'loadout';
-    loadoutDiv.style.display = 'none';
-
-    function refreshLoadout() {
-      loadoutDiv.innerHTML = '<div class="field-label" style="margin-bottom:8px">Equip a sword from The Armory</div>';
-      const armory = Forge.getArmoryForAvatar();
-      if (!armory.length) {
-        loadoutDiv.innerHTML += '<p style="color:var(--text3);font-size:.85rem">No saved designs yet.<br>Create a sword in The Forge first.</p>';
-      } else {
-        /* Unequip option */
-        const unequip = document.createElement('button');
-        unequip.className = 'btn-secondary';
-        unequip.style.marginBottom = '10px';
-        unequip.textContent = 'Unequip sword';
-        unequip.addEventListener('click', () => {
-          avatarCreatorState.equippedSwordConfig = null;
-          Avatar.update(avatarPreviewEl, avatarCreatorState);
-        });
-        loadoutDiv.appendChild(unequip);
-
-        armory.forEach(item => {
-          const btn = document.createElement('div');
-          btn.className = 'card armory-card';
-          btn.style.cursor = 'pointer';
-          const thumbSvg = Swords.thumb(item.swordCfg, '');
-          btn.innerHTML = `<div class="armory-thumb">${thumbSvg}</div>
-            <div class="armory-info"><div class="armory-name">${ScrollModule.escHtml(item.name)}</div></div>`;
-          btn.addEventListener('click', () => {
-            avatarCreatorState.equippedSwordConfig = item.swordCfg;
-            Avatar.update(avatarPreviewEl, avatarCreatorState);
-          });
-          loadoutDiv.appendChild(btn);
-        });
-      }
-    }
-
-    loadoutDiv.addEventListener('click', () => {}); // ensure event delegation works
-    optionsPane.addEventListener('shown', e => { if (e.detail === 'loadout') refreshLoadout(); });
-
-    optionsPane.appendChild(appearDiv);
-    optionsPane.appendChild(outfitDiv);
-    optionsPane.appendChild(loadoutDiv);
+    optionsPane.appendChild(lookDiv);
+    optionsPane.appendChild(accDiv);
 
     /* Tab switching */
     optionsPane.querySelector('.avatar-tabs').addEventListener('click', e => {
@@ -297,7 +220,6 @@
         c.classList.toggle('active', c.dataset.content === tab);
         c.style.display = c.dataset.content === tab ? 'flex' : 'none';
       });
-      if (tab === 'loadout') refreshLoadout();
     });
   }
 

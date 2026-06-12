@@ -1,451 +1,313 @@
 /* ============================================================
    Gavin's World — The Forge module
-   Sword selector, customizer, poseable manikin, costume/accessory
-   picker, save to Armory.
+   Sword design studio: type picker, blade/handle/effect/guard/
+   inscription customisation, armory save/load/delete.
+   No manikin, no avatar, just the sword — big and beautiful.
    ============================================================ */
 
 const Forge = (() => {
-  /* Default state */
+
+  /* ---- Default state ---- */
   const DEFAULT_STATE = () => ({
-    swordType: 'katana',
-    bladeColor: '#cdd6e4',
-    effect: 'none',
+    swordType:   'katana',
+    bladeColor:  '#cdd6e4',
+    effect:      'none',
     handleColor: '#2d3a5c',
-    guardStyle: 'default',
-    guardColor: '#b9a45c',
+    guardStyle:  'default',
+    guardColor:  '#b9a45c',
     inscription: '',
-    costume: 'default',
-    capeColor: '#1a2a6e',
-    accessory: 'none',
-    auraColor: '#3b82f6',
-    skinTone: 'tone1',
-    hairStyle: 'spiky',
-    hairColor: '#111111',
-    eyeStyle: 'default',
-    eyeColor: '#2a5fc8',
-    pose: 'idle',
-    swordCarry: 'right',
-    name: '',
+    name:        '',
   });
 
   let state = DEFAULT_STATE();
-  let forgeSvgEl = null;
-  let swordCloseupSvgEl = null;
-  let swordCloseupNameEl = null;
+  let previewSvgEl   = null;
   let forgeContainer = null;
-  let swordTabActive = true;
 
   /* ---- Build sword config from state ---- */
   function swordCfg() {
     return {
-      type: state.swordType,
-      bladeColor: state.bladeColor,
-      effect: state.effect,
+      type:        state.swordType,
+      bladeColor:  state.bladeColor,
+      effect:      state.effect,
       handleColor: state.handleColor,
-      guardStyle: state.guardStyle,
-      guardColor: state.guardColor,
+      guardStyle:  state.guardStyle,
+      guardColor:  state.guardColor,
       inscription: state.inscription,
     };
   }
 
-  /* ---- Build avatar config from state ---- */
-  function avatarCfg(showHandles = false) {
-    const poseData = Avatar.POSES[state.pose] || Avatar.POSES.idle;
-    const poses = { ...poseData.a };
-    return {
-      skinTone: state.skinTone,
-      hairStyle: state.hairStyle,
-      hairColor: state.hairColor,
-      eyeStyle: state.eyeStyle,
-      eyeColor: state.eyeColor,
-      costume: state.costume,
-      accessory: state.accessory,
-      capeColor: state.capeColor,
-      auraColor: state.auraColor,
-      equippedSwordConfig: state.swordCarry !== 'stow' ? swordCfg() : null,
-      poses,
-    };
-  }
-
-  /* ---- Re-render character in Forge stage ---- */
-  function refresh() {
-    if (!forgeSvgEl) return;
-    Avatar.update(forgeSvgEl, avatarCfg(false));
-    updateSwordCloseup();
-  }
-
-  /* ---- Update the zoomed sword preview ---- */
-  function updateSwordCloseup() {
-    if (!swordCloseupSvgEl) return;
-    const cfg = swordCfg();
-    const { g, def } = Swords.buildGroup(cfg);
+  /* ---- Update the large sword preview ---- */
+  function updatePreview() {
+    if (!previewSvgEl) return;
+    const { g, def } = Swords.buildGroup(swordCfg());
     const [bx, by, bw, bh] = def.box;
-    swordCloseupSvgEl.setAttribute('viewBox', `${bx} ${by} ${bw} ${bh}`);
-    const aspect = bw / bh;
-    const svgH = 170;
-    const svgW = Math.round(svgH * aspect);
-    swordCloseupSvgEl.style.height = svgH + 'px';
-    swordCloseupSvgEl.style.width = Math.max(40, svgW) + 'px';
-    swordCloseupSvgEl.innerHTML = g;
-    if (swordCloseupNameEl) swordCloseupNameEl.textContent = def.name;
+    previewSvgEl.setAttribute('viewBox', bx + ' ' + by + ' ' + bw + ' ' + bh);
+    previewSvgEl.innerHTML = g;
   }
 
-  /* ---- Build the Forge UI into a container element ---- */
+  /* Public alias */
+  function refresh() { updatePreview(); }
+
+  /* ---- Mount the Forge UI into a container element ---- */
   function mount(container) {
     forgeContainer = container;
-    swordTabActive = true;
 
     container.innerHTML = `
-      <div class="forge-layout">
+      <div class="forge-wrap">
 
-        <!-- Stage: sword closeup + character preview + pose buttons -->
-        <div class="forge-stage">
-          <div class="forge-stage-bg"></div>
+        <!-- Sword type strip -->
+        <div class="forge-type-strip" id="forge-type-strip"></div>
+        <div class="forge-type-name" id="forge-type-name"></div>
 
-          <!-- Sword close-up (visible when Sword tab active) -->
-          <div class="forge-sword-closeup visible" id="forge-sword-closeup">
-            <svg id="forge-sword-closeup-svg" xmlns="http://www.w3.org/2000/svg" class="forge-sword-closeup-svg"></svg>
-            <div class="forge-sword-closeup-name" id="forge-sword-closeup-name"></div>
-          </div>
-
-          <!-- Character (visible when Style/Armory tab active) -->
-          <div class="forge-char-wrap hidden" id="forge-char-wrap">
-            <svg class="forge-char-svg avatar-svg" viewBox="-80 -240 160 380" xmlns="http://www.w3.org/2000/svg"></svg>
-          </div>
-          <div class="forge-poses hidden" id="forge-poses"></div>
+        <!-- Large sword preview -->
+        <div class="forge-preview">
+          <div class="forge-preview-glow"></div>
+          <svg id="forge-preview-svg"
+               class="forge-preview-svg"
+               xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
 
-        <!-- Panel: tabbed customization -->
-        <div class="forge-panel">
-          <div class="forge-tabs">
-            <button class="forge-tab active" data-tab="sword">⚔ Sword</button>
-            <button class="forge-tab" data-tab="costume">👘 Style</button>
-            <button class="forge-tab" data-tab="armory">🏛 Armory</button>
-          </div>
-          <div class="forge-tab-content active" data-content="sword" id="forge-sword-panel"></div>
-          <div class="forge-tab-content" data-content="costume" id="forge-costume-panel"></div>
-          <div class="forge-tab-content" data-content="armory" id="forge-armory-panel"></div>
+        <!-- Tab bar -->
+        <div class="forge-tabs" id="forge-tabs">
+          <button class="forge-tab active" data-tab="blade">Blade</button>
+          <button class="forge-tab" data-tab="handle">Handle</button>
+          <button class="forge-tab" data-tab="effects">Effects</button>
+          <button class="forge-tab" data-tab="save">Armory</button>
+        </div>
+
+        <!-- Tab panels -->
+        <div class="forge-panel-wrap">
+          <div class="forge-panel active" data-panel="blade"   id="forge-panel-blade"></div>
+          <div class="forge-panel"        data-panel="handle"  id="forge-panel-handle"></div>
+          <div class="forge-panel"        data-panel="effects" id="forge-panel-effects"></div>
+          <div class="forge-panel"        data-panel="save"    id="forge-panel-save"></div>
         </div>
 
       </div>`;
 
-    forgeSvgEl = container.querySelector('.forge-char-svg');
-    swordCloseupSvgEl = container.querySelector('#forge-sword-closeup-svg');
-    swordCloseupNameEl = container.querySelector('#forge-sword-closeup-name');
+    previewSvgEl = container.querySelector('#forge-preview-svg');
 
-    buildPoses(container.querySelector('#forge-poses'));
-    buildSwordPanel(container.querySelector('#forge-sword-panel'));
-    buildCostumePanel(container.querySelector('#forge-costume-panel'));
-    buildArmoryPanel(container.querySelector('#forge-armory-panel'));
+    buildTypeStrip(container.querySelector('#forge-type-strip'), container.querySelector('#forge-type-name'));
+    buildBladePanel(container.querySelector('#forge-panel-blade'));
+    buildHandlePanel(container.querySelector('#forge-panel-handle'));
+    buildEffectsPanel(container.querySelector('#forge-panel-effects'));
+    buildArmoryPanel(container.querySelector('#forge-panel-save'));
 
-    /* Tab switching — show sword closeup for Sword tab, character for Style/Armory */
-    container.querySelectorAll('.forge-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('.forge-tab').forEach(b => b.classList.remove('active'));
-        container.querySelectorAll('.forge-tab-content').forEach(c => c.classList.remove('active'));
-        btn.classList.add('active');
-        container.querySelector(`[data-content="${btn.dataset.tab}"]`).classList.add('active');
-
-        swordTabActive = btn.dataset.tab === 'sword';
-        const closeupEl = container.querySelector('#forge-sword-closeup');
-        const charWrapEl = container.querySelector('#forge-char-wrap');
-        const posesEl = container.querySelector('#forge-poses');
-        if (swordTabActive) {
-          closeupEl.classList.add('visible');
-          charWrapEl.classList.add('hidden');
-          posesEl.classList.add('hidden');
-        } else {
-          closeupEl.classList.remove('visible');
-          charWrapEl.classList.remove('hidden');
-          posesEl.classList.remove('hidden');
-        }
-
-        if (btn.dataset.tab === 'armory') refreshArmory(container.querySelector('#forge-armory-panel'));
-      });
-    });
-
-    refresh();
-  }
-
-  const POSE_ICONS = { idle: '🧍', battle: '⚔️', slash: '🌀', guard: '🛡️', victory: '✊', kneel: '🙇' };
-
-  /* ---- Poses ---- */
-  function buildPoses(el) {
-    el.innerHTML = Object.entries(Avatar.POSES).map(([id, p]) =>
-      `<button class="pose-btn${state.pose === id ? ' active' : ''}" data-pose="${id}">
-        <span class="pose-icon">${POSE_ICONS[id] || ''}</span>${p.name}
-      </button>`
-    ).join('');
-    el.addEventListener('click', e => {
-      const btn = e.target.closest('.pose-btn');
+    /* Tab switching */
+    container.querySelector('#forge-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.forge-tab');
       if (!btn) return;
-      state.pose = btn.dataset.pose;
-      el.querySelectorAll('.pose-btn').forEach(b => b.classList.toggle('active', b.dataset.pose === state.pose));
-      refresh();
+      const tab = btn.dataset.tab;
+      container.querySelectorAll('.forge-tab').forEach(b => b.classList.toggle('active', b === btn));
+      container.querySelectorAll('.forge-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+      if (tab === 'save') refreshArmoryPanel(container.querySelector('#forge-panel-save'));
     });
+
+    updatePreview();
   }
 
-  /* ---- Sword panel ---- */
-  function buildSwordPanel(el) {
-    /* Sword type grid */
-    const swordGrid = document.createElement('div');
-    swordGrid.className = 'sword-selector';
-    swordGrid.id = 'sword-type-grid';
-    Swords.DEFS.forEach(def => {
-      const btn = document.createElement('div');
-      btn.className = 'sword-choice' + (state.swordType === def.id ? ' active' : '');
-      btn.dataset.sword = def.id;
-      const thumbSvg = Swords.thumb({ type: def.id, bladeColor: state.bladeColor, effect: state.effect, handleColor: state.handleColor, guardColor: state.guardColor }, '');
-      btn.innerHTML = `${thumbSvg}<span class="sword-choice-name">${def.name}</span>`;
-      btn.addEventListener('click', () => {
-        state.swordType = def.id;
-        swordGrid.querySelectorAll('.sword-choice').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        refresh();
+  /* ---- Sword type strip ---- */
+  function buildTypeStrip(stripEl, nameEl) {
+    function render() {
+      stripEl.innerHTML = '';
+      Swords.DEFS.forEach(def => {
+        const btn = document.createElement('button');
+        btn.className = 'forge-type-btn' + (state.swordType === def.id ? ' active' : '');
+        btn.dataset.sword = def.id;
+        btn.title = def.name;
+        const thumbSvg = Swords.thumb(
+          { type: def.id, bladeColor: state.bladeColor, effect: 'none',
+            handleColor: state.handleColor, guardColor: state.guardColor },
+          'forge-type-thumb'
+        );
+        btn.innerHTML = thumbSvg;
+        btn.addEventListener('click', () => {
+          state.swordType = def.id;
+          render();
+          nameEl.textContent = def.name;
+          updatePreview();
+        });
+        stripEl.appendChild(btn);
       });
-      swordGrid.appendChild(btn);
+      /* Scroll active button into view */
+      const active = stripEl.querySelector('.active');
+      if (active) active.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    }
+
+    render();
+    const current = Swords.byId[state.swordType];
+    nameEl.textContent = current ? current.name : '';
+
+    /* Expose render so color changes can refresh thumbs */
+    stripEl._rerender = render;
+  }
+
+  /* ---- Blade tab ---- */
+  function buildBladePanel(el) {
+    /* Blade color */
+    const bladeColorRow = makeColorRow('Blade Color', state.bladeColor, v => {
+      state.bladeColor = v;
+      updatePreview();
+      refreshTypeThumbs();
     });
-
-    /* Blade color row */
-    const bladeColorRow = makeColorRow('Blade Color', state.bladeColor, (v) => { state.bladeColor = v; refresh(); updateSwordThumbs(swordGrid); });
-
-    /* Effect grid */
-    const effectSection = document.createElement('div');
-    effectSection.className = 'field-group';
-    effectSection.innerHTML = `<div class="field-label">Blade Effect</div>`;
-    const effectGrid = document.createElement('div');
-    effectGrid.className = 'effect-grid';
-    Swords.EFFECTS.forEach(ef => {
-      const b = document.createElement('button');
-      b.className = 'effect-btn' + (state.effect === ef ? ' active' : '');
-      b.dataset.effect = ef;
-      b.textContent = ef === 'none' ? 'None' : ef.charAt(0).toUpperCase() + ef.slice(1);
-      b.addEventListener('click', () => {
-        state.effect = ef;
-        effectGrid.querySelectorAll('.effect-btn').forEach(x => x.classList.toggle('active', x.dataset.effect === ef));
-        refresh();
-      });
-      effectGrid.appendChild(b);
-    });
-    effectSection.appendChild(effectGrid);
-
-    /* Guard color */
-    const guardColorRow = makeColorRow('Guard Color', state.guardColor, (v) => { state.guardColor = v; refresh(); });
 
     /* Guard style */
-    const guardStyleSection = document.createElement('div');
-    guardStyleSection.className = 'field-group';
-    guardStyleSection.innerHTML = `<label class="field-label">Guard Style</label>`;
+    const guardStyleWrap = document.createElement('div');
+    guardStyleWrap.className = 'field-group';
+    guardStyleWrap.innerHTML = `<label class="field-label">Guard Style</label>`;
     const guardSel = document.createElement('select');
     guardSel.className = 'field-select';
     Swords.GUARD_STYLES.forEach(gs => {
       const opt = document.createElement('option');
-      opt.value = gs; opt.textContent = gs.charAt(0).toUpperCase() + gs.slice(1);
+      opt.value = gs;
+      opt.textContent = gs.charAt(0).toUpperCase() + gs.slice(1);
       if (gs === state.guardStyle) opt.selected = true;
       guardSel.appendChild(opt);
     });
-    guardSel.addEventListener('change', () => { state.guardStyle = guardSel.value; refresh(); });
-    guardStyleSection.appendChild(guardSel);
+    guardSel.addEventListener('change', () => { state.guardStyle = guardSel.value; updatePreview(); });
+    guardStyleWrap.appendChild(guardSel);
 
-    /* Handle color */
-    const handleColorRow = makeColorRow('Handle Color', state.handleColor, (v) => { state.handleColor = v; refresh(); });
-
-    /* Inscription */
-    const inscSection = document.createElement('div');
-    inscSection.className = 'field-group';
-    inscSection.innerHTML = `<label class="field-label">Inscription (up to 12 chars)</label>
-      <input class="field-input" type="text" maxlength="12" placeholder="Engrave text on blade…" value="${ScrollModule.escHtml(state.inscription)}"/>`;
-    inscSection.querySelector('input').addEventListener('input', e => { state.inscription = e.target.value; refresh(); });
-
-    /* Sword carry position */
-    const carrySection = document.createElement('div');
-    carrySection.className = 'field-group';
-    carrySection.innerHTML = `<div class="field-label">Carry Position</div>
-      <div class="effect-grid">
-        ${['right','left','back','stow'].map(c =>
-          `<button class="effect-btn${state.swordCarry === c ? ' active' : ''}" data-carry="${c}">${c.charAt(0).toUpperCase() + c.slice(1)}</button>`
-        ).join('')}
-      </div>`;
-    carrySection.querySelectorAll('[data-carry]').forEach(b => {
-      b.addEventListener('click', () => {
-        state.swordCarry = b.dataset.carry;
-        carrySection.querySelectorAll('[data-carry]').forEach(x => x.classList.toggle('active', x.dataset.carry === state.swordCarry));
-        refresh();
-      });
+    /* Guard color */
+    const guardColorRow = makeColorRow('Guard Color', state.guardColor, v => {
+      state.guardColor = v;
+      updatePreview();
     });
 
-    el.appendChild(makeDivider('Choose Sword'));
-    el.appendChild(swordGrid);
     el.appendChild(bladeColorRow);
-    el.appendChild(effectSection);
+    el.appendChild(makeDivider());
+    el.appendChild(guardStyleWrap);
     el.appendChild(guardColorRow);
-    el.appendChild(guardStyleSection);
+  }
+
+  /* ---- Handle tab ---- */
+  function buildHandlePanel(el) {
+    const handleColorRow = makeColorRow('Handle Color', state.handleColor, v => {
+      state.handleColor = v;
+      updatePreview();
+      refreshTypeThumbs();
+    });
+
+    const inscWrap = document.createElement('div');
+    inscWrap.className = 'field-group';
+    inscWrap.innerHTML = `<label class="field-label">Inscription <span style="color:var(--text3);font-weight:400">(up to 12 chars)</span></label>
+      <input class="field-input" type="text" maxlength="12"
+             placeholder="Engrave text on blade…"
+             value="${ScrollModule.escHtml(state.inscription)}"/>`;
+    inscWrap.querySelector('input').addEventListener('input', e => {
+      state.inscription = e.target.value;
+      updatePreview();
+    });
+
     el.appendChild(handleColorRow);
-    el.appendChild(inscSection);
-    el.appendChild(carrySection);
-  }
-
-  function updateSwordThumbs(grid) {
-    grid.querySelectorAll('.sword-choice').forEach(btn => {
-      const def = Swords.byId[btn.dataset.sword];
-      if (!def) return;
-      const svg = btn.querySelector('svg');
-      if (svg) {
-        const newThumb = Swords.thumb({ type: def.id, bladeColor: state.bladeColor, effect: state.effect, handleColor: state.handleColor, guardColor: state.guardColor }, '');
-        const tmp = document.createElement('div');
-        tmp.innerHTML = newThumb;
-        btn.replaceChild(tmp.firstElementChild, svg);
-      }
-    });
-  }
-
-  /* ---- Costume panel ---- */
-  function buildCostumePanel(el) {
-    /* Skin tone */
-    const skinSection = document.createElement('div');
-    skinSection.className = 'field-group';
-    skinSection.innerHTML = `<div class="field-label">Skin Tone</div>`;
-    const skinGrid = document.createElement('div');
-    skinGrid.className = 'swatch-grid';
-    Avatar.SKIN_TONES.forEach(tone => {
-      const sw = document.createElement('div');
-      sw.className = 'swatch' + (state.skinTone === tone.id ? ' active' : '');
-      sw.style.background = tone.hex;
-      sw.title = tone.name;
-      sw.addEventListener('click', () => {
-        state.skinTone = tone.id;
-        skinGrid.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s === sw));
-        refresh();
-      });
-      skinGrid.appendChild(sw);
-    });
-    skinSection.appendChild(skinGrid);
-
-    /* Hair style */
-    const hairStyleSection = makeSelectorSection('Hair Style', Avatar.HAIR_STYLES, state.hairStyle, (v) => {
-      state.hairStyle = v; refresh();
-    });
-
-    /* Hair color */
-    const hairColorRow = makeSwatchRow('Hair Color', Avatar.HAIR_COLORS, state.hairColor, (v) => { state.hairColor = v; refresh(); });
-
-    /* Eye style */
-    const eyeStyleSection = makeSelectorSection('Eye Style', Avatar.EYE_STYLES, state.eyeStyle, (v) => {
-      state.eyeStyle = v; refresh();
-    });
-
-    /* Eye color */
-    const eyeColorRow = makeColorRow('Eye Color', state.eyeColor, (v) => { state.eyeColor = v; refresh(); });
-
-    /* Costume */
-    const costumeSection = document.createElement('div');
-    costumeSection.className = 'field-group';
-    costumeSection.innerHTML = `<div class="field-label">Outfit</div>`;
-    const cosGrid = document.createElement('div');
-    cosGrid.className = 'costume-grid';
-    Object.entries(Avatar.COSTUMES).forEach(([id, cos]) => {
-      const card = document.createElement('div');
-      card.className = 'costume-card' + (state.costume === id ? ' active' : '');
-      card.dataset.costume = id;
-      card.innerHTML = `<span class="costume-icon">${cos.icon}</span><span class="costume-name">${cos.name}</span>`;
-      card.addEventListener('click', () => {
-        state.costume = id;
-        cosGrid.querySelectorAll('.costume-card').forEach(c => c.classList.toggle('active', c.dataset.costume === id));
-        refresh();
-      });
-      cosGrid.appendChild(card);
-    });
-    costumeSection.appendChild(cosGrid);
-
-    /* Accessories */
-    const accSection = document.createElement('div');
-    accSection.className = 'field-group';
-    accSection.innerHTML = `<div class="field-label">Accessory</div>`;
-    const accGrid = document.createElement('div');
-    accGrid.className = 'costume-grid';
-    Object.entries(Avatar.ACCESSORIES).forEach(([id, acc]) => {
-      const card = document.createElement('div');
-      card.className = 'costume-card' + (state.accessory === id ? ' active' : '');
-      card.dataset.acc = id;
-      card.innerHTML = `<span class="costume-icon">${acc.icon}</span><span class="costume-name">${acc.name}</span>`;
-      card.addEventListener('click', () => {
-        state.accessory = id;
-        accGrid.querySelectorAll('.costume-card').forEach(c => c.classList.toggle('active', c.dataset.acc === id));
-        refresh();
-      });
-      accGrid.appendChild(card);
-    });
-    accSection.appendChild(accGrid);
-
-    /* Cape / aura color */
-    const capeColorRow = makeColorRow('Cape / Aura Color', state.capeColor, (v) => {
-      state.capeColor = v; state.auraColor = v; refresh();
-    });
-
-    el.appendChild(skinSection);
-    el.appendChild(hairStyleSection);
-    el.appendChild(hairColorRow);
     el.appendChild(makeDivider());
-    el.appendChild(eyeStyleSection);
-    el.appendChild(eyeColorRow);
-    el.appendChild(makeDivider());
-    el.appendChild(costumeSection);
-    el.appendChild(accSection);
-    el.appendChild(capeColorRow);
+    el.appendChild(inscWrap);
   }
 
-  /* ---- Armory panel ---- */
+  /* ---- Effects tab ---- */
+
+  /* Color hints per effect so buttons feel alive */
+  const EFFECT_COLORS = {
+    none:      { border: 'var(--border)',  bg: 'var(--bg3)',               text: 'var(--text3)' },
+    glow:      { border: '#60a5fa',        bg: 'rgba(59,130,246,0.12)',     text: '#93c5fd' },
+    fire:      { border: '#f97316',        bg: 'rgba(249,115,22,0.12)',     text: '#fdba74' },
+    ice:       { border: '#67e8f9',        bg: 'rgba(103,232,249,0.10)',    text: '#a5f3fc' },
+    lightning: { border: '#facc15',        bg: 'rgba(250,204,21,0.10)',     text: '#fde68a' },
+    shadow:    { border: '#a78bfa',        bg: 'rgba(167,139,250,0.10)',    text: '#c4b5fd' },
+    rainbow:   { border: '#f472b6',        bg: 'rgba(244,114,182,0.10)',    text: '#fbcfe8' },
+  };
+
+  function buildEffectsPanel(el) {
+    const label = document.createElement('div');
+    label.className = 'field-label';
+    label.textContent = 'Blade Effect';
+
+    const grid = document.createElement('div');
+    grid.className = 'effect-grid';
+    grid.id = 'forge-effect-grid';
+
+    Swords.EFFECTS.forEach(ef => {
+      const btn = document.createElement('button');
+      btn.dataset.effect = ef;
+      const cols = EFFECT_COLORS[ef] || EFFECT_COLORS.none;
+      btn.style.cssText = `padding:8px 16px;border-radius:20px;border:1px solid ${cols.border};
+        font-family:var(--font-display);font-size:.75rem;font-weight:600;
+        letter-spacing:.07em;text-transform:uppercase;
+        color:${cols.text};background:${cols.bg};
+        transition:all var(--transition);cursor:pointer;`;
+      btn.textContent = ef === 'none' ? 'None' : ef.charAt(0).toUpperCase() + ef.slice(1);
+      if (state.effect === ef) btn.style.boxShadow = `0 0 10px ${cols.border}66`;
+      btn.addEventListener('click', () => {
+        state.effect = ef;
+        grid.querySelectorAll('button').forEach(b => { b.style.boxShadow = ''; });
+        btn.style.boxShadow = `0 0 10px ${cols.border}66`;
+        updatePreview();
+      });
+      grid.appendChild(btn);
+    });
+
+    el.appendChild(label);
+    el.appendChild(grid);
+  }
+
+  /* ---- Armory tab ---- */
   function buildArmoryPanel(el) {
+    /* Just a placeholder root; refreshArmoryPanel fills it */
     el._root = el;
+    refreshArmoryPanel(el);
   }
 
-  function refreshArmory(el) {
-    const armory = Store.getArmory();
+  function refreshArmoryPanel(el) {
     el.innerHTML = '';
 
-    /* Save current design button */
-    const saveWrap = document.createElement('div');
-    saveWrap.innerHTML = `
-      <div class="field-group">
-        <label class="field-label">Save Current Design</label>
-        <input class="field-input" type="text" id="armory-name-input" placeholder="Name this creation…" value="${ScrollModule.escHtml(state.name || '')}"/>
-      </div>`;
+    /* Save section */
+    const saveSection = document.createElement('div');
+    saveSection.className = 'field-group';
+    saveSection.innerHTML = `<label class="field-label">Design Name</label>
+      <input class="field-input" type="text" id="armory-name-input"
+             placeholder="Name this creation…"
+             value="${ScrollModule.escHtml(state.name || '')}"/>`;
     const saveBtn = document.createElement('button');
     saveBtn.className = 'btn-primary';
-    saveBtn.textContent = 'Save to Armory';
-    saveBtn.style.width = '100%';
-    saveBtn.style.marginTop = '8px';
+    saveBtn.textContent = 'Save Design';
+    saveBtn.style.cssText = 'width:100%;margin-top:8px;';
     saveBtn.addEventListener('click', () => {
       const nameEl = el.querySelector('#armory-name-input');
       const name = nameEl ? nameEl.value.trim() : '';
-      if (!name) { nameEl && nameEl.focus(); return; }
+      if (!name) { if (nameEl) nameEl.focus(); return; }
       state.name = name;
-      const armoryData = Store.getArmory();
-      armoryData.push({
+      const armory = Store.getArmory();
+      armory.push({
         id: Store.uid(),
         name,
         ts: Date.now(),
         swordCfg: swordCfg(),
-        avatarCfg: avatarCfg(),
         state: { ...state },
       });
-      Store.setArmory(armoryData);
-      refreshArmory(el);
+      Store.setArmory(armory);
+      refreshArmoryPanel(el);
     });
-    saveWrap.appendChild(saveBtn);
-    el.appendChild(saveWrap);
+    saveSection.appendChild(saveBtn);
+    el.appendChild(saveSection);
+
+    /* Saved designs list */
+    const armory = Store.getArmory();
 
     if (!armory.length) {
       el.appendChild(Object.assign(document.createElement('div'), {
         className: 'empty-state',
-        innerHTML: '<p style="margin-top:16px">No saved designs yet.<br>Create something and save it here.</p>',
+        innerHTML: '<p style="margin-top:20px;text-align:center;color:var(--text3);font-size:.9rem">No saved designs yet.<br>Create something and save it here.</p>',
       }));
       return;
     }
 
+    const listLabel = document.createElement('div');
+    listLabel.className = 'field-label';
+    listLabel.style.marginTop = '16px';
+    listLabel.textContent = 'Saved Designs';
+    el.appendChild(listLabel);
+
     const list = document.createElement('div');
     list.className = 'armory-grid';
-    list.style.marginTop = '16px';
 
     armory.slice().reverse().forEach(item => {
       const card = document.createElement('div');
@@ -458,13 +320,13 @@ const Forge = (() => {
           <div class="armory-meta">${new Date(item.ts).toLocaleDateString()}</div>
         </div>
         <div class="armory-actions">
-          <button class="btn-icon btn-load-design" data-id="${item.id}" title="Load">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <button class="btn-icon btn-load-design" data-id="${item.id}" title="Load design">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 4v12M4 10l6 6 6-6"/>
             </svg>
           </button>
           <button class="btn-icon btn-del-design" data-id="${item.id}" title="Delete" style="color:#f87171">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 5h14M8 5V3h4v2M6 5l1 12h6l1-12"/>
             </svg>
           </button>
@@ -474,36 +336,84 @@ const Forge = (() => {
 
     list.addEventListener('click', e => {
       const loadBtn = e.target.closest('.btn-load-design');
-      const delBtn = e.target.closest('.btn-del-design');
+      const delBtn  = e.target.closest('.btn-del-design');
       if (loadBtn) {
         const id = loadBtn.dataset.id;
         const item = Store.getArmory().find(a => a.id === id);
-        if (item) { Object.assign(state, item.state); refresh(); }
+        if (item && item.state) {
+          Object.assign(state, item.state);
+          updatePreview();
+          /* Re-sync color pickers & selects in other panels */
+          syncPanelControls();
+        }
       }
       if (delBtn) {
         const id = delBtn.dataset.id;
         Store.setArmory(Store.getArmory().filter(a => a.id !== id));
-        refreshArmory(el);
+        refreshArmoryPanel(el);
       }
     });
 
     el.appendChild(list);
   }
 
-  /* ---- Also expose saved sword designs to avatar wardrobe ---- */
-  function getArmoryForAvatar() {
-    return Store.getArmory().map(item => ({
-      id: item.id,
-      name: item.name,
-      swordCfg: item.swordCfg,
-    }));
+  /* After loading a saved design, sync visible form controls to new state */
+  function syncPanelControls() {
+    if (!forgeContainer) return;
+
+    /* Blade color picker */
+    const bcp = forgeContainer.querySelector('#forge-panel-blade .color-picker-inline');
+    if (bcp) { bcp.value = state.bladeColor; bcp.nextElementSibling.textContent = state.bladeColor; }
+
+    /* Guard style select */
+    const gsel = forgeContainer.querySelector('#forge-panel-blade .field-select');
+    if (gsel) gsel.value = state.guardStyle;
+
+    /* Guard color picker */
+    const gcpAll = forgeContainer.querySelectorAll('#forge-panel-blade .color-picker-inline');
+    if (gcpAll[1]) { gcpAll[1].value = state.guardColor; gcpAll[1].nextElementSibling.textContent = state.guardColor; }
+
+    /* Handle color picker */
+    const hcp = forgeContainer.querySelector('#forge-panel-handle .color-picker-inline');
+    if (hcp) { hcp.value = state.handleColor; hcp.nextElementSibling.textContent = state.handleColor; }
+
+    /* Inscription */
+    const inscInput = forgeContainer.querySelector('#forge-panel-handle .field-input');
+    if (inscInput) inscInput.value = state.inscription;
+
+    /* Effect buttons — reset glow, re-glow active */
+    const effectGrid = forgeContainer.querySelector('#forge-effect-grid');
+    if (effectGrid) {
+      effectGrid.querySelectorAll('button').forEach(btn => {
+        btn.style.boxShadow = '';
+        if (btn.dataset.effect === state.effect) {
+          const cols = EFFECT_COLORS[state.effect] || EFFECT_COLORS.none;
+          btn.style.boxShadow = `0 0 10px ${cols.border}66`;
+        }
+      });
+    }
+
+    /* Type strip */
+    const strip = forgeContainer.querySelector('#forge-type-strip');
+    if (strip && strip._rerender) strip._rerender();
+    const nameEl = forgeContainer.querySelector('#forge-type-name');
+    if (nameEl) {
+      const def = Swords.byId[state.swordType];
+      nameEl.textContent = def ? def.name : '';
+    }
+  }
+
+  /* Re-render type-strip thumbnails when blade/handle color changes */
+  function refreshTypeThumbs() {
+    if (!forgeContainer) return;
+    const strip = forgeContainer.querySelector('#forge-type-strip');
+    if (strip && strip._rerender) strip._rerender();
   }
 
   /* ---- Helpers ---- */
-  function makeDivider(label = '') {
+  function makeDivider() {
     const el = document.createElement('div');
-    el.className = label ? 'divider-label' : 'divider';
-    if (label) el.textContent = label;
+    el.className = 'divider';
     return el;
   }
 
@@ -513,71 +423,32 @@ const Forge = (() => {
     row.innerHTML = `<div class="field-label">${label}</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <input class="color-picker-inline" type="color" value="${initial}"/>
-        <span style="font-size:.8rem;color:var(--text3)">${initial}</span>
+        <span class="color-hex-label" style="font-size:.82rem;color:var(--text2);font-family:var(--font-display);letter-spacing:.04em;">${initial}</span>
       </div>`;
     const picker = row.querySelector('input');
-    const span = row.querySelector('span');
+    const span   = row.querySelector('span');
     picker.addEventListener('input', e => { span.textContent = e.target.value; onChange(e.target.value); });
     return row;
   }
 
-  function makeSwatchRow(label, colors, initial, onChange) {
-    const row = document.createElement('div');
-    row.className = 'field-group';
-    row.innerHTML = `<div class="field-label">${label}</div>`;
-    const grid = document.createElement('div');
-    grid.className = 'swatch-grid';
-    colors.forEach(c => {
-      const sw = document.createElement('div');
-      sw.className = 'swatch' + (c === initial ? ' active' : '');
-      sw.style.background = c;
-      sw.title = c;
-      sw.addEventListener('click', () => {
-        grid.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s === sw));
-        onChange(c);
-      });
-      grid.appendChild(sw);
-    });
-    row.appendChild(grid);
-    return row;
+  /* ---- Public: expose saved swords to avatar wardrobe ---- */
+  function getArmoryForAvatar() {
+    return Store.getArmory().map(item => ({
+      id:       item.id,
+      name:     item.name,
+      swordCfg: item.swordCfg,
+    }));
   }
 
-  function makeSelectorSection(label, options, active, onChange) {
-    const section = document.createElement('div');
-    section.className = 'field-group';
-    section.innerHTML = `<div class="field-label">${label}</div>`;
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;';
-    options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'costume-card' + (opt === active ? ' active' : '');
-      btn.dataset.val = opt;
-      btn.innerHTML = `<span class="costume-name" style="font-size:.7rem">${opt}</span>`;
-      btn.addEventListener('click', () => {
-        grid.querySelectorAll('.costume-card').forEach(b => b.classList.toggle('active', b.dataset.val === opt));
-        onChange(opt);
-      });
-      grid.appendChild(btn);
-    });
-    section.appendChild(grid);
-    return section;
-  }
-
-  /* Load a state from the avatar's equipped sword (cross-module integration) */
-  function loadFromAvatarConfig(cfg) {
-    if (cfg.costume)   state.costume   = cfg.costume;
-    if (cfg.skinTone)  state.skinTone  = cfg.skinTone;
-    if (cfg.hairStyle) state.hairStyle = cfg.hairStyle;
-    if (cfg.hairColor) state.hairColor = cfg.hairColor;
-    if (cfg.eyeStyle)  state.eyeStyle  = cfg.eyeStyle;
-    if (cfg.eyeColor)  state.eyeColor  = cfg.eyeColor;
-    if (cfg.accessory) state.accessory = cfg.accessory;
-    if (cfg.capeColor) state.capeColor = cfg.capeColor;
-    if (cfg.equippedSwordConfig) Object.assign(state, cfg.equippedSwordConfig);
-  }
+  /* ---- No-op stub kept for app.js compatibility ---- */
+  function loadFromAvatarConfig() {}
 
   return {
-    state, mount, refresh, swordCfg, avatarCfg, getArmoryForAvatar, loadFromAvatarConfig,
+    mount,
+    refresh,
+    swordCfg,
+    getArmoryForAvatar,
+    loadFromAvatarConfig,
     DEFAULT_STATE,
   };
 })();

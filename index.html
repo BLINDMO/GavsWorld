@@ -40,75 +40,56 @@
         </div>
       </nav>
 
-      <!-- Hero: avatar + tiles -->
-      <div class="home-hero">
+      <!-- Avatar portrait -->
+      <div class="home-avatar-section">
+        <div class="avatar-portrait-ring" id="home-avatar-wrap" role="button" tabindex="0" aria-label="Customize your avatar">
+          <svg id="home-avatar-svg" class="avatar-svg anim-float"
+            viewBox="-85 -110 170 200" xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"></svg>
+        </div>
+        <p class="home-player-name">Gavin</p>
+        <button class="btn-customize" id="btn-customize-avatar">✦ Customize</button>
+      </div>
 
-        <!-- Avatar display -->
-        <div class="avatar-display">
-          <div class="avatar-canvas-wrap" id="home-avatar-wrap" role="button" tabindex="0" aria-label="Customize your avatar">
-            <svg id="home-avatar-svg" class="avatar-svg anim-float"
-              viewBox="-80 -240 160 380" xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"></svg>
+      <!-- Module grid -->
+      <div class="module-grid">
+
+        <div class="module-tile" data-module="scroll" role="button" tabindex="0" aria-label="Open The Codex">
+          <div class="tile-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
+              <path d="M8 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+              <path d="M14 2v6h6M9 13h6M9 17h4"/>
+            </svg>
           </div>
-          <span class="avatar-name-tag">Your Character</span>
-          <button class="btn-customize-avatar" id="btn-customize-avatar">
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5l4 4-9 9H2v-4L11 5zM14 2l4 4"/></svg>
-            Customize
-          </button>
+          <div class="tile-title">The Codex</div>
+          <div class="tile-sub">Quests · notes · rankings</div>
         </div>
 
-        <!-- Module tiles -->
-        <div class="module-tiles">
-
-          <div class="module-tile" data-module="scroll" role="button" tabindex="0" aria-label="Open The Codex">
-            <div class="tile-accent"></div>
-            <div class="tile-top">
-              <div class="tile-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-linecap="round">
-                  <path d="M8 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
-                  <path d="M14 2v6h6M9 13h6M9 17h4"/>
-                </svg>
-              </div>
-              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
-            </div>
-            <div class="tile-title">The Codex</div>
-            <div class="tile-sub">Quests · notes · rankings · wishlists</div>
+        <div class="module-tile" data-module="wheel" role="button" tabindex="0" aria-label="Open Wheel of Fate">
+          <div class="tile-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>
+              <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
+            </svg>
           </div>
+          <div class="tile-title">Wheel of Fate</div>
+          <div class="tile-sub">Spin to decide</div>
+        </div>
 
-          <div class="module-tile" data-module="wheel" role="button" tabindex="0" aria-label="Open Wheel of Fate">
-            <div class="tile-accent"></div>
-            <div class="tile-top">
-              <div class="tile-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.8" stroke-linecap="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>
-                  <circle cx="12" cy="12" r="2.5" fill="#f97316"/>
-                </svg>
-              </div>
-              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
-            </div>
-            <div class="tile-title">Wheel of Fate</div>
-            <div class="tile-sub">Spin to decide · save your wheels</div>
+        <div class="module-tile" data-module="forge" role="button" tabindex="0" aria-label="Open The Forge">
+          <div class="tile-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#c8d6e8" stroke-width="1.8" stroke-linecap="round">
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0l-3 3z"/>
+              <path d="M13 6L4 15l-1 4 4-1 9-9"/>
+              <path d="M7.5 10.5l2 2"/>
+            </svg>
           </div>
+          <div class="tile-title">The Forge</div>
+          <div class="tile-sub">Design swords</div>
+        </div>
 
-          <div class="module-tile" data-module="forge" role="button" tabindex="0" aria-label="Open The Forge">
-            <div class="tile-accent"></div>
-            <div class="tile-top">
-              <div class="tile-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#c8d6e8" stroke-width="1.8" stroke-linecap="round">
-                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0l-3 3z"/>
-                  <path d="M13 6L4 15l-1 4 4-1 9-9"/>
-                  <path d="M7.5 10.5l2 2"/>
-                </svg>
-              </div>
-              <svg class="tile-arrow" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h8M9 5l4 4-4 4"/></svg>
-            </div>
-            <div class="tile-title">The Forge</div>
-            <div class="tile-sub">Design swords · build your fighter</div>
-          </div>
-
-        </div><!-- /module-tiles -->
-      </div><!-- /home-hero -->
+      </div><!-- /module-grid -->
 
     </div><!-- /home-inner -->
   </section><!-- /page-home -->

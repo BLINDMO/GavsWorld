@@ -1,693 +1,740 @@
 /* ============================================================
-   Gavin's World — Avatar & manikin character system
-   Anime-heroic SVG character. Shared rig for homepage avatar
-   and Forge poser. 8 hair styles, 6 eye types, 7 skin tones,
-   10 costumes, full accessories.
+   Gavin's World — Avatar portrait system
+   HEAD-ONLY anime portrait for Gavin's World PWA.
+   8 hair styles, 6 eye types, 7 skin tones, 5 accessories.
+   ViewBox: -85 -110 170 200
+   Face center: (0,0)
    ============================================================ */
 
 const Avatar = (() => {
-  /* ---------- Palettes ---------- */
+
+  /* ------------------------------------------------------------------ */
+  /*  Color utilities                                                     */
+  /* ------------------------------------------------------------------ */
+
+  const GWColor = {
+    /**
+     * Lighten (amount > 0) or darken (amount < 0) a hex color.
+     * amount in range roughly -100..100 (added to each 0-255 channel).
+     */
+    shade(hex, amount) {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const num = parseInt(c, 16);
+      const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+      const g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount));
+      const b = Math.min(255, Math.max(0, (num & 0xff) + amount));
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    },
+    /** Mix two hex colours at ratio t (0=a, 1=b). */
+    mix(a, b, t = 0.5) {
+      const ca = parseInt(a.replace('#',''), 16);
+      const cb = parseInt(b.replace('#',''), 16);
+      const r = Math.round(((ca>>16) & 0xff) * (1-t) + ((cb>>16) & 0xff) * t);
+      const g = Math.round(((ca>>8)  & 0xff) * (1-t) + ((cb>>8)  & 0xff) * t);
+      const bv= Math.round(( ca      & 0xff) * (1-t) + ( cb      & 0xff) * t);
+      return '#' + [r,g,bv].map(v=>v.toString(16).padStart(2,'0')).join('');
+    }
+  };
+
+  /* ------------------------------------------------------------------ */
+  /*  Palettes                                                            */
+  /* ------------------------------------------------------------------ */
+
   const SKIN_TONES = [
-    { id: 'tone1', name: 'Porcelain', hex: '#fde8d2', shadow: '#e8b896', lip: '#d4807a' },
-    { id: 'tone2', name: 'Fair',      hex: '#f5c98c', shadow: '#d4974e', lip: '#c8706e' },
-    { id: 'tone3', name: 'Light',     hex: '#e8a86a', shadow: '#c07838', lip: '#b05c58' },
-    { id: 'tone4', name: 'Medium',    hex: '#c47d40', shadow: '#8a5020', lip: '#965050' },
-    { id: 'tone5', name: 'Tan',       hex: '#a05c2a', shadow: '#6a3810', lip: '#804040' },
-    { id: 'tone6', name: 'Brown',     hex: '#7a3f18', shadow: '#4e2608', lip: '#663030' },
-    { id: 'tone7', name: 'Deep',      hex: '#4e2a10', shadow: '#2e1608', lip: '#5a2828' },
+    { id:'tone1', name:'Porcelain', hex:'#fde8d2', shadow:'#e8b896', shadow2:'#d49a72', lip:'#d4807a' },
+    { id:'tone2', name:'Fair',      hex:'#f5c98c', shadow:'#d4974e', shadow2:'#b87030', lip:'#c8706e' },
+    { id:'tone3', name:'Light',     hex:'#e8a86a', shadow:'#c07838', shadow2:'#9e5e20', lip:'#b05c58' },
+    { id:'tone4', name:'Medium',    hex:'#c47d40', shadow:'#8a5020', shadow2:'#6a3a10', lip:'#965050' },
+    { id:'tone5', name:'Tan',       hex:'#a05c2a', shadow:'#6a3810', shadow2:'#4e2808', lip:'#804040' },
+    { id:'tone6', name:'Brown',     hex:'#7a3f18', shadow:'#4e2608', shadow2:'#341604', lip:'#663030' },
+    { id:'tone7', name:'Deep',      hex:'#4e2a10', shadow:'#2e1608', shadow2:'#1a0c04', lip:'#5a2828' },
   ];
 
   const HAIR_COLORS = [
-    '#111111','#2a1a0a','#5a3010','#8b5e2a','#c8942a','#e8c85a',
-    '#f5f5e8','#d4282a','#e85a8a','#7a4ed8','#1a6ad4','#1ac87a',
+    { hex:'#0d0d0d', name:'Jet Black'   },
+    { hex:'#2a1a0a', name:'Dark Brown'  },
+    { hex:'#5a3010', name:'Chestnut'    },
+    { hex:'#8b5e2a', name:'Light Brown' },
+    { hex:'#c8942a', name:'Amber'       },
+    { hex:'#e8c85a', name:'Golden'      },
+    { hex:'#f5f5e8', name:'Platinum'    },
+    { hex:'#d4282a', name:'Red'         },
+    { hex:'#e85a8a', name:'Pink'        },
+    { hex:'#7a4ed8', name:'Purple'      },
+    { hex:'#1a6ad4', name:'Blue'        },
+    { hex:'#1ac87a', name:'Green'       },
   ];
 
-  /* ---------- Eye styles (SVG paths, coord-relative, eyes at y=0) ---------- */
-  /* Each draws a pair of eyes in a ~64×16 space, centered at origin */
-  const EYE_STYLES = {
-    default: (c, sclera = '#fff') => `
-      <g class="eyes">
-        <ellipse cx="-14" cy="0" rx="8" ry="5.5" fill="${sclera}"/>
-        <ellipse cx="14"  cy="0" rx="8" ry="5.5" fill="${sclera}"/>
-        <ellipse cx="-14" cy="0.5" rx="5" ry="4.5" fill="${c}"/>
-        <ellipse cx="14"  cy="0.5" rx="5" ry="4.5" fill="${c}"/>
-        <ellipse cx="-13.2" cy="0.2" rx="3" ry="3"   fill="#111"/>
-        <ellipse cx="14.8"  cy="0.2" rx="3" ry="3"   fill="#111"/>
-        <circle cx="-11.8" cy="-1"  r="1.2" fill="${sclera}" opacity=".9"/>
-        <circle cx="16.2"  cy="-1"  r="1.2" fill="${sclera}" opacity=".9"/>
-        <path d="M -22 -4.5 Q -14 -8.5 -6 -4.5" fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round"/>
-        <path d="M 6 -4.5 Q 14 -8.5 22 -4.5"   fill="none" stroke="#111" stroke-width="1.6" stroke-linecap="round"/>
-      </g>`,
+  /* ------------------------------------------------------------------ */
+  /*  Face path                                                           */
+  /* ------------------------------------------------------------------ */
 
-    sharp: (c) => `
-      <g class="eyes">
-        <path d="M -22 0 L -14 -6 L -6 0 L -14 4 Z" fill="#fff"/>
-        <path d="M 6 0 L 14 -6 L 22 0 L 14 4 Z" fill="#fff"/>
-        <ellipse cx="-14" cy="-0.5" rx="4.5" ry="4" fill="${c}"/>
-        <ellipse cx="14"  cy="-0.5" rx="4.5" ry="4" fill="${c}"/>
-        <ellipse cx="-13.5" cy="-0.5" rx="2.8" ry="2.8" fill="#111"/>
-        <ellipse cx="14.5"  cy="-0.5" rx="2.8" ry="2.8" fill="#111"/>
-        <circle cx="-12.4" cy="-1.8" r="1" fill="#fff"/>
-        <circle cx="15.6"  cy="-1.8" r="1" fill="#fff"/>
-        <line x1="-22" y1="-4" x2="-6" y2="-5.5" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="6"  y1="-5.5" x2="22" y2="-4" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-      </g>`,
+  const FACE_PATH = 'M -44 8 Q -50 -28 -40 -54 Q -24 -68 0 -68 Q 24 -68 40 -54 Q 50 -28 44 8 Q 38 36 0 42 Q -38 36 -44 8 Z';
 
-    sleepy: (c) => `
-      <g class="eyes">
-        <ellipse cx="-14" cy="1" rx="8" ry="4" fill="#fff"/>
-        <ellipse cx="14"  cy="1" rx="8" ry="4" fill="#fff"/>
-        <ellipse cx="-14" cy="1.5" rx="5" ry="3" fill="${c}"/>
-        <ellipse cx="14"  cy="1.5" rx="5" ry="3" fill="${c}"/>
-        <ellipse cx="-14" cy="1.5" rx="3" ry="2.5" fill="#111"/>
-        <ellipse cx="14"  cy="1.5" rx="3" ry="2.5" fill="#111"/>
-        <circle cx="-12.8" cy=".5" r="1" fill="#fff"/>
-        <circle cx="15.2"  cy=".5" r="1" fill="#fff"/>
-        <path d="M -22 -2 Q -14 -5.5 -6 -2" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M 6 -2 Q 14 -5.5 22 -2"   fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="-22" y1="2" x2="-6" y2="2.5" stroke="#333" stroke-width="1.5" opacity=".5"/>
-        <line x1="6"  y1="2.5" x2="22" y2="2" stroke="#333" stroke-width="1.5" opacity=".5"/>
-      </g>`,
+  /* ------------------------------------------------------------------ */
+  /*  Hair styles                                                         */
+  /*  Each style: { back(color), front(color) }                          */
+  /*  back  = drawn BEHIND face                                           */
+  /*  front = drawn OVER face skin but before eyes                       */
+  /* ------------------------------------------------------------------ */
 
-    wide: (c) => `
-      <g class="eyes">
-        <ellipse cx="-14" cy="0" rx="9" ry="7" fill="#fff"/>
-        <ellipse cx="14"  cy="0" rx="9" ry="7" fill="#fff"/>
-        <ellipse cx="-14" cy="0" rx="6.5" ry="6" fill="${c}"/>
-        <ellipse cx="14"  cy="0" rx="6.5" ry="6" fill="${c}"/>
-        <ellipse cx="-14" cy="0" rx="4" ry="4" fill="#111"/>
-        <ellipse cx="14"  cy="0" rx="4" ry="4" fill="#111"/>
-        <circle cx="-12.2" cy="-1.8" r="1.4" fill="#fff"/>
-        <circle cx="15.8"  cy="-1.8" r="1.4" fill="#fff"/>
-        <path d="M -23 -5 Q -14 -9.5 -5 -5" fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M 5 -5 Q 14 -9.5 23 -5"   fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-      </g>`,
-
-    sharingan: (c) => `
-      <g class="eyes">
-        <ellipse cx="-14" cy="0" rx="8.5" ry="6" fill="#fff"/>
-        <ellipse cx="14"  cy="0" rx="8.5" ry="6" fill="#fff"/>
-        <circle cx="-14" cy="0" r="5.5" fill="#c80000"/>
-        <circle cx="14"  cy="0" r="5.5" fill="#c80000"/>
-        <g fill="#111">
-          <path d="M -14 -5.5 L -12 -2 L -11 0 L -14 0 L -17 0 L -16 -2 Z" opacity=".9"/>
-          <path d="M -14 5.5 L -12 2 L -11 0 L -14 0 L -17 0 L -16 2 Z" opacity=".9"/>
-          <path d="M -19.5 0 L -16 -1.5 L -14 0 L -16 1.5 Z" opacity=".9"/>
-          <path d="M -8.5 0 L -12 -1.5 L -14 0 L -12 1.5 Z" opacity=".9"/>
-          <circle cx="-14" cy="0" r="2.5"/>
-        </g>
-        <g fill="#111" transform="translate(28 0)">
-          <path d="M -14 -5.5 L -12 -2 L -11 0 L -14 0 L -17 0 L -16 -2 Z" opacity=".9"/>
-          <path d="M -14 5.5 L -12 2 L -11 0 L -14 0 L -17 0 L -16 2 Z" opacity=".9"/>
-          <path d="M -19.5 0 L -16 -1.5 L -14 0 L -16 1.5 Z" opacity=".9"/>
-          <path d="M -8.5 0 L -12 -1.5 L -14 0 L -12 1.5 Z" opacity=".9"/>
-          <circle cx="-14" cy="0" r="2.5"/>
-        </g>
-        <circle cx="-14" cy="0" r="1.4" fill="#c80000"/>
-        <circle cx="14"  cy="0" r="1.4" fill="#c80000"/>
-        <path d="M -22 -4 Q -14 -9 -6 -4"  fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M 6 -4 Q 14 -9 22 -4"    fill="none" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-      </g>`,
-
-    ender: (c) => `
-      <g class="eyes">
-        <ellipse cx="-14" cy="0" rx="8" ry="5" fill="#0a0a14"/>
-        <ellipse cx="14"  cy="0" rx="8" ry="5" fill="#0a0a14"/>
-        <rect x="-18.5" y="-3" width="9" height="6" rx="1.5" fill="${c}" opacity=".9">
-          <animate attributeName="opacity" values=".9;.3;.9" dur="2.6s" repeatCount="indefinite"/>
-        </rect>
-        <rect x="9.5" y="-3" width="9" height="6" rx="1.5" fill="${c}" opacity=".9">
-          <animate attributeName="opacity" values=".3;.9;.3" dur="2.6s" repeatCount="indefinite"/>
-        </rect>
-        <rect x="-18.5" y="-3" width="9" height="6" rx="1.5" fill="${c}" filter="url(#eye-glow)" opacity=".6"/>
-        <rect x="9.5" y="-3" width="9" height="6" rx="1.5" fill="${c}" filter="url(#eye-glow)" opacity=".6"/>
-      </g>`,
-  };
-
-  /* ---------- Hair styles — two-pass rendering: { back, front }
-     back  = drawn BEFORE face fill (rear-flowing strands behind head)
-     front = drawn AFTER face fill but BEFORE eyes (scalp cap visible over skin)
-     Coord space: face top≈y=-52, chin≈y=12, eyes at y=-20 (head group) ---------- */
   const HAIR_STYLES = {
 
-    spiky: (c) => {
-      const hi = GWColor.shade(c, 0.42);
-      const dk = GWColor.shade(c, -0.28);
-      return {
-        back: '',
-        front: `<g class="hair">
-          <path d="M -26 4 C -30 -18 -28 -38 -18 -46 L 18 -46 C 28 -38 30 -18 26 4 C 20 -12 10 -24 0 -26 C -10 -24 -20 -12 -26 4 Z" fill="${c}"/>
-          <path d="M -3 -46 C -4 -58 -2 -68 0 -74 C 2 -68 4 -58 3 -46 Z" fill="${c}"/>
-          <path d="M -12 -46 C -15 -57 -12 -65 -10 -67 C -8 -62 -6 -55 -9 -46 Z" fill="${c}"/>
-          <path d="M 12 -46 C 15 -57 12 -65 10 -67 C 8 -62 6 -55 9 -46 Z" fill="${c}"/>
-          <path d="M -20 -42 C -26 -54 -23 -62 -20 -62 C -17 -56 -16 -49 -18 -42 Z" fill="${c}"/>
-          <path d="M 20 -42 C 26 -54 23 -62 20 -62 C 17 -56 16 -49 18 -42 Z" fill="${c}"/>
-          <path d="M -26 4 C -34 14 -32 28 -28 38 C -26 24 -26 12 -28 4 Z" fill="${c}"/>
-          <path d="M 26 4 C 34 14 32 28 28 38 C 26 24 26 12 28 4 Z" fill="${c}"/>
-          <path d="M -26 4 C -28 -4 -28 -16 -26 -26 L -22 -22 C -22 -10 -22 0 -24 6 Z" fill="${dk}" opacity=".28"/>
-          <path d="M 26 4 C 28 -4 28 -16 26 -26 L 22 -22 C 22 -10 22 0 24 6 Z" fill="${dk}" opacity=".28"/>
-          <line x1="0" y1="-72" x2="0" y2="-48" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
-          <line x1="-10" y1="-65" x2="-8" y2="-48" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".65"/>
-          <line x1="10" y1="-65" x2="8" y2="-48" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".65"/>
-          <line x1="-20" y1="-60" x2="-18" y2="-44" stroke="${hi}" stroke-width=".8" stroke-linecap="round" opacity=".5"/>
-          <line x1="20" y1="-60" x2="18" y2="-44" stroke="${hi}" stroke-width=".8" stroke-linecap="round" opacity=".5"/>
-        </g>`,
-      };
+    spiky: {
+      back: () => '',
+      front: (c) => {
+        const hi = GWColor.shade(c, 42);
+        const sh = GWColor.shade(c, -28);
+        return `
+        <g class="hair-front">
+          <!-- base cap -->
+          <path d="M -44 8 Q -50 -28 -40 -54 Q -24 -68 0 -68 Q 24 -68 40 -54 Q 50 -28 44 8 Q 20 -20 0 -24 Q -20 -20 -44 8 Z" fill="${sh}"/>
+          <!-- spikes -->
+          <path d="M -36 -48 Q -44 -80 -30 -100 Q -22 -78 -28 -56 Z" fill="${c}"/>
+          <path d="M -18 -60 Q -14 -95 0 -108 Q 8 -88 2 -64 Z" fill="${c}"/>
+          <path d="M 0 -62 Q 10 -98 26 -105 Q 28 -82 18 -60 Z" fill="${c}"/>
+          <path d="M 18 -52 Q 32 -84 46 -88 Q 42 -66 36 -48 Z" fill="${c}"/>
+          <!-- cap fill over face top -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -28 -66 0 -68 Q 28 -66 40 -54 Q 52 -30 44 8 Q 20 -18 0 -22 Q -20 -18 -44 8 Z" fill="${c}"/>
+          <!-- highlight streaks -->
+          <path d="M -10 -64 Q -6 -96 4 -104" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+          <path d="M 8 -60 Q 16 -90 22 -100" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+          <path d="M -28 -52 Q -34 -76 -26 -96" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
 
-    long: (c) => {
-      const hi = GWColor.shade(c, 0.36);
-      const dk = GWColor.shade(c, -0.25);
-      return {
-        back: `<g class="hair-back">
-          <path d="M -28 -8 C -32 8 -30 42 -26 72 C -22 42 -20 8 -22 -8 Z" fill="${c}"/>
-          <path d="M 28 -8 C 32 8 30 42 26 72 C 22 42 20 8 22 -8 Z" fill="${c}"/>
-          <path d="M -28 -8 C -30 8 -28 40 -26 68 L -24 66 C -26 38 -26 6 -24 -8 Z" fill="${hi}" opacity=".35"/>
-          <path d="M 28 -8 C 30 8 28 40 26 68 L 24 66 C 26 38 26 6 24 -8 Z" fill="${hi}" opacity=".35"/>
-          <path d="M -28 -8 C -30 0 -28 8 -26 12 L -24 10 C -24 4 -24 -2 -26 -8 Z" fill="${dk}" opacity=".28"/>
-          <path d="M 28 -8 C 30 0 28 8 26 12 L 24 10 C 24 4 24 -2 26 -8 Z" fill="${dk}" opacity=".28"/>
-        </g>`,
-        front: `<g class="hair-front">
-          <path d="M -22 -44 C -30 -44 -32 -28 -28 -8 C -24 -28 -16 -38 0 -44 C 16 -38 24 -28 28 -8 C 32 -28 30 -44 22 -44 C 14 -48 8 -50 0 -50 C -8 -50 -14 -48 -22 -44 Z" fill="${c}"/>
-          <path d="M -6 -50 L -6 -8" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
-          <path d="M 6 -50 L 6 -8" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
-          <path d="M -14 -48 C -12 -38 -10 -24 -10 -8" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
-          <path d="M 14 -48 C 12 -38 10 -24 10 -8" stroke="${hi}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".4"/>
-        </g>`,
-      };
+    long: {
+      back: (c) => {
+        const sh = GWColor.shade(c, -30);
+        return `
+        <g class="hair-back">
+          <!-- long side strands behind head -->
+          <path d="M -40 -54 Q -62 -30 -58 20 Q -56 50 -48 70 Q -36 80 -30 70 Q -26 50 -30 20 Q -36 -10 -44 8" fill="${sh}"/>
+          <path d="M 40 -54 Q 62 -30 58 20 Q 56 50 48 70 Q 36 80 30 70 Q 26 50 30 20 Q 36 -10 44 8" fill="${sh}"/>
+          <!-- center back flow -->
+          <path d="M -20 -68 Q 0 -72 20 -68 Q 14 0 10 40 Q 4 72 0 80 Q -4 72 -10 40 Q -14 0 -20 -68 Z" fill="${c}"/>
+        </g>`;
+      },
+      front: (c) => {
+        const hi = GWColor.shade(c, 40);
+        const sh = GWColor.shade(c, -25);
+        return `
+        <g class="hair-front">
+          <!-- scalp cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- fringe sweeping left -->
+          <path d="M -6 -68 Q -30 -72 -48 -58 Q -54 -44 -50 -30" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+          <path d="M 4 -68 Q 20 -74 38 -62 Q 46 -50 44 -36" fill="none" stroke="${sh}" stroke-width="8" stroke-linecap="round"/>
+          <!-- highlight -->
+          <path d="M -22 -64 Q -10 -70 6 -68" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+        </g>`;
+      }
     },
 
-    bun: (c) => {
-      const hi = GWColor.shade(c, 0.36);
-      const dk = GWColor.shade(c, -0.25);
-      return {
-        back: '',
-        front: `<g class="hair">
-          <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -28 10 -40 0 -42 C -10 -40 -22 -28 -28 -8 Z" fill="${c}"/>
-          <ellipse cx="12" cy="-54" rx="13" ry="11" fill="${c}"/>
-          <ellipse cx="4" cy="-62" rx="9" ry="8" fill="${c}"/>
-          <circle cx="18" cy="-50" r="6.5" fill="${c}"/>
-          <path d="M 8 -44 C 10 -52 18 -58 22 -56 C 20 -52 16 -48 12 -46" fill="${c}"/>
-          <path d="M 6 -68 Q 12 -62 14 -54" fill="none" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
-          <ellipse cx="11" cy="-56" rx="9" ry="7" fill="${hi}" opacity=".22"/>
-          <path d="M -22 -10 C -26 4 -24 16 -22 20 C -20 10 -20 0 -22 -10 Z" fill="${dk}" opacity=".3"/>
-          <path d="M 22 -10 C 26 4 24 16 22 20 C 20 10 20 0 22 -10 Z" fill="${dk}" opacity=".3"/>
-        </g>`,
-      };
+    bun: {
+      back: () => '',
+      front: (c) => {
+        const hi = GWColor.shade(c, 44);
+        const sh = GWColor.shade(c, -30);
+        return `
+        <g class="hair-front">
+          <!-- scalp cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- bun circle on top -->
+          <circle cx="0" cy="-82" r="20" fill="${c}"/>
+          <circle cx="0" cy="-82" r="20" fill="none" stroke="${sh}" stroke-width="2"/>
+          <!-- bun wrap lines -->
+          <path d="M -12 -92 Q 0 -96 12 -92" fill="none" stroke="${sh}" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+          <path d="M -16 -84 Q 0 -88 16 -84" fill="none" stroke="${sh}" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+          <path d="M -18 -76 Q 0 -80 18 -76" fill="none" stroke="${sh}" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>
+          <!-- highlight on bun -->
+          <ellipse cx="-6" cy="-90" rx="6" ry="4" fill="${hi}" opacity=".45" transform="rotate(-20,-6,-90)"/>
+          <!-- fringe -->
+          <path d="M -40 -54 Q -46 -38 -42 -24" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round"/>
+          <path d="M 40 -54 Q 46 -38 42 -24" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round"/>
+          <!-- highlight streaks on cap -->
+          <path d="M -14 -62 Q -6 -68 8 -66" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+        </g>`;
+      }
     },
 
-    short: (c) => {
-      const hi = GWColor.shade(c, 0.42);
-      const dk = GWColor.shade(c, -0.3);
-      return {
-        back: '',
-        front: `<g class="hair">
-          <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 10 -32 0 -32 C -10 -32 -22 -22 -28 -8 Z" fill="${c}"/>
-          <path d="M -28 -8 C -34 0 -32 10 -28 13 C -24 4 -24 -3 -28 -8 Z" fill="${c}"/>
-          <path d="M 28 -8 C 34 0 32 10 28 13 C 24 4 24 -3 28 -8 Z" fill="${c}"/>
-          <path d="M -6 -46 C -2 -50 2 -50 6 -46 C 2 -44 -2 -44 -6 -46 Z" fill="${hi}" opacity=".55"/>
-          <line x1="0" y1="-48" x2="0" y2="-30" stroke="${hi}" stroke-width="1.4" stroke-linecap="round" opacity=".6"/>
-          <line x1="-14" y1="-46" x2="-14" y2="-28" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".45"/>
-          <line x1="14" y1="-46" x2="14" y2="-28" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".45"/>
-          <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".28"/>
-          <path d="M 28 -8 C 30 -2 30 4 28 8 L 26 6 C 26 0 26 -4 28 -8 Z" fill="${dk}" opacity=".28"/>
-        </g>`,
-      };
+    short: {
+      back: () => '',
+      front: (c) => {
+        const hi = GWColor.shade(c, 40);
+        const sh = GWColor.shade(c, -25);
+        return `
+        <g class="hair-front">
+          <!-- tight cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- slightly domed top -->
+          <path d="M -40 -54 Q -30 -84 0 -82 Q 30 -84 40 -54" fill="${c}"/>
+          <!-- side coverage -->
+          <path d="M -44 8 Q -54 -10 -50 -34 Q -46 -52 -40 -54" fill="${sh}"/>
+          <path d="M 44 8 Q 54 -10 50 -34 Q 46 -52 40 -54" fill="${sh}"/>
+          <!-- texture lines -->
+          <path d="M -22 -66 Q -10 -80 8 -78" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M -30 -58 Q -18 -74 -4 -74" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+          <path d="M 8 -76 Q 20 -80 32 -70" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
 
-    ponytail: (c) => {
-      const hi = GWColor.shade(c, 0.36);
-      const dk = GWColor.shade(c, -0.25);
-      return {
-        back: `<g class="hair-back">
-          <path d="M 28 -8 C 38 6 38 28 32 54 C 28 40 24 22 26 2 C 26 -2 26 -6 28 -8 Z" fill="${c}"/>
-          <path d="M 30 -8 C 38 6 38 28 32 54 L 30 50 C 34 24 32 4 30 -8 Z" fill="${dk}" opacity=".25"/>
-          <path d="M 30 -4 C 34 10 34 30 30 50" stroke="${hi}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".45"/>
-        </g>`,
-        front: `<g class="hair-front">
-          <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -34 0 -34 C -10 -34 -22 -24 -28 -8 Z" fill="${c}"/>
-          <path d="M 24 -28 C 34 -22 38 -8 36 6 L 30 4 C 32 -6 30 -18 24 -24 Z" fill="${c}"/>
-          <ellipse cx="28" cy="-26" rx="5.5" ry="4" transform="rotate(20 28 -26)" fill="${c}"/>
-          <line x1="-6" y1="-48" x2="-6" y2="-8" stroke="${hi}" stroke-width="1.3" stroke-linecap="round" opacity=".5"/>
-          <line x1="6" y1="-48" x2="8" y2="-8" stroke="${hi}" stroke-width="1" stroke-linecap="round" opacity=".4"/>
-          <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".28"/>
-        </g>`,
-      };
+    ponytail: {
+      back: (c) => {
+        const sh = GWColor.shade(c, -28);
+        const mid = GWColor.shade(c, -14);
+        return `
+        <g class="hair-back">
+          <!-- ponytail extending to the right and down -->
+          <path d="M 36 -48 Q 68 -20 72 14 Q 74 38 66 56 Q 60 68 52 60 Q 46 50 50 30 Q 54 10 50 -10 Q 44 -32 36 -48 Z" fill="${mid}"/>
+          <path d="M 38 -44 Q 60 -14 62 14 Q 63 32 58 50" fill="none" stroke="${sh}" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+          <path d="M 44 -36 Q 64 -8 65 20 Q 65 40 60 56" fill="none" stroke="${GWColor.shade(c,30)}" stroke-width="1.5" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      },
+      front: (c) => {
+        const hi = GWColor.shade(c, 42);
+        const sh = GWColor.shade(c, -28);
+        return `
+        <g class="hair-front">
+          <!-- cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- domed top -->
+          <path d="M -38 -54 Q -26 -80 0 -80 Q 26 -80 38 -54" fill="${c}"/>
+          <!-- tie/band area on right -->
+          <ellipse cx="42" cy="-30" rx="7" ry="5" fill="${sh}" transform="rotate(20 42 -30)"/>
+          <!-- fringe pieces -->
+          <path d="M -40 -54 Q -48 -38 -44 -20" fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round"/>
+          <!-- highlight -->
+          <path d="M -18 -66 Q -4 -78 12 -74" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M 10 -72 Q 24 -78 34 -64" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
 
-    swept: (c) => {
-      const hi = GWColor.shade(c, 0.36);
-      const dk = GWColor.shade(c, -0.28);
-      return {
-        back: '',
-        front: `<g class="hair">
-          <path d="M -28 -8 C -32 -28 -18 -48 10 -50 C 28 -48 34 -28 28 -8 C 18 -26 4 -34 -4 -30 C -14 -28 -22 -18 -28 -8 Z" fill="${c}"/>
-          <path d="M 10 -50 C 26 -52 38 -40 36 -22 C 28 -36 18 -40 10 -36 Z" fill="${c}" opacity=".88"/>
-          <path d="M -30 -6 C -38 4 -36 16 -30 20 C -28 8 -28 0 -30 -6 Z" fill="${c}"/>
-          <path d="M 28 -8 C 32 2 30 12 26 16 C 24 6 24 -2 28 -8 Z" fill="${c}"/>
-          <path d="M -14 -46 C -6 -52 10 -52 20 -48" stroke="${hi}" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".7"/>
-          <path d="M 24 -46 C 30 -36 32 -26 30 -16" stroke="${hi}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>
-          <path d="M -30 -6 C -36 2 -36 12 -32 18 L -30 14 C -30 6 -30 -2 -30 -6 Z" fill="${hi}" opacity=".28"/>
-          <path d="M -28 -8 C -30 -4 -30 2 -28 6 L -26 4 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".22"/>
-        </g>`,
-      };
+    swept: {
+      back: () => '',
+      front: (c) => {
+        const hi = GWColor.shade(c, 44);
+        const sh = GWColor.shade(c, -26);
+        return `
+        <g class="hair-front">
+          <!-- cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- top sweep to the right -->
+          <path d="M -30 -70 Q -10 -90 20 -88 Q 42 -86 50 -68 Q 38 -58 18 -60 Q -4 -62 -22 -68 Z" fill="${c}"/>
+          <path d="M -22 -70 Q -2 -92 24 -90 Q 44 -88 52 -70" fill="none" stroke="${sh}" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+          <!-- side coverage left -->
+          <path d="M -44 8 Q -56 -8 -52 -32 Q -48 -52 -40 -54" fill="${sh}"/>
+          <!-- highlight -->
+          <path d="M -14 -72 Q 8 -90 30 -86" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M -26 -64 Q -8 -82 14 -80" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
 
-    twoblock: (c, c2 = '#1a1a1a') => {
-      const hi = GWColor.shade(c, 0.38);
-      const hi2 = GWColor.shade(c2, 0.28);
-      return {
-        back: '',
-        front: `<g class="hair">
-          <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -24 10 -34 0 -34 C -10 -34 -22 -24 -28 -8 Z" fill="${c2}"/>
-          <path d="M -28 -8 C -30 0 -28 8 -24 12 L -22 6 C -22 -2 -24 -6 -26 -8 Z" fill="${c2}"/>
-          <path d="M 28 -8 C 30 0 28 8 24 12 L 22 6 C 22 -2 24 -6 26 -8 Z" fill="${c2}"/>
-          <path d="M -20 -44 C -14 -50 14 -50 20 -44 C 8 -48 -8 -48 -20 -44 Z" fill="${c}"/>
-          <path d="M -20 -44 C -28 -32 -28 -18 -26 -8 L -18 -8 C -16 -20 -14 -34 -12 -38 C -6 -44 6 -44 12 -38 C 14 -34 16 -20 18 -8 L 26 -8 C 28 -18 28 -32 20 -44 Z" fill="${c}" opacity=".92"/>
-          <path d="M -4 -50 C -2 -48 2 -48 4 -50 L 2 -46 L -2 -46 Z" fill="${hi}" opacity=".5"/>
-          <line x1="-2" y1="-48" x2="0" y2="-28" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".55"/>
-          <line x1="8" y1="-48" x2="10" y2="-28" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".4"/>
-          <line x1="-26" y1="-8" x2="-26" y2="8" stroke="${hi2}" stroke-width="1" stroke-linecap="round" opacity=".35"/>
-          <line x1="26" y1="-8" x2="26" y2="8" stroke="${hi2}" stroke-width="1" stroke-linecap="round" opacity=".35"/>
-        </g>`,
-      };
+    twoblock: {
+      back: () => '',
+      front: (c) => {
+        const hi = GWColor.shade(c, 40);
+        const sh = GWColor.shade(c, -28);
+        const undercut = GWColor.shade(c, -50);
+        return `
+        <g class="hair-front">
+          <!-- undercut sides (very dark/shaved look) -->
+          <path d="M -44 8 Q -54 -10 -50 -34 Q -46 -50 -40 -54 Q -42 -38 -38 -20 Q -36 -8 -38 8 Z" fill="${undercut}"/>
+          <path d="M 44 8 Q 54 -10 50 -34 Q 46 -50 40 -54 Q 42 -38 38 -20 Q 36 -8 38 8 Z" fill="${undercut}"/>
+          <!-- top block — thick, slightly forward-tilted -->
+          <path d="M -38 -54 Q -28 -82 0 -84 Q 28 -82 38 -54 Q 20 -50 0 -50 Q -20 -50 -38 -54 Z" fill="${c}"/>
+          <!-- top block sides with slight overhang -->
+          <path d="M -38 -54 Q -42 -44 -40 -30 Q -38 -14 -38 -8" fill="none" stroke="${sh}" stroke-width="8" stroke-linecap="round"/>
+          <path d="M 38 -54 Q 42 -44 40 -30 Q 38 -14 38 -8" fill="none" stroke="${sh}" stroke-width="8" stroke-linecap="round"/>
+          <!-- fringe hang-down center -->
+          <path d="M -20 -52 Q -10 -40 0 -38 Q 10 -40 20 -52" fill="${sh}" opacity=".7"/>
+          <!-- highlights on top block -->
+          <path d="M -18 -76 Q -2 -84 16 -78" fill="none" stroke="${hi}" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+          <path d="M -26 -66 Q -8 -76 10 -72" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
 
-    warrior: (c) => {
-      const hi = GWColor.shade(c, 0.38);
-      const dk = GWColor.shade(c, -0.25);
-      return {
-        back: `<g class="hair-back">
-          <path d="M -30 -6 C -36 8 -32 26 -28 34 C -24 20 -24 4 -28 -8 Z" fill="${c}"/>
-          <path d="M 30 -6 C 36 8 32 26 28 34 C 24 20 24 4 28 -8 Z" fill="${c}"/>
-          <path d="M -30 -6 C -36 6 -34 18 -30 26 L -28 22 C -30 10 -28 0 -28 -8 Z" fill="${hi}" opacity=".3"/>
-          <path d="M 30 -6 C 36 6 34 18 30 26 L 28 22 C 30 10 28 0 28 -8 Z" fill="${hi}" opacity=".3"/>
-          <path d="M -28 -8 C -30 -2 -30 4 -28 8 L -26 6 C -26 0 -26 -4 -28 -8 Z" fill="${dk}" opacity=".3"/>
-          <path d="M 28 -8 C 30 -2 30 4 28 8 L 26 6 C 26 0 26 -4 28 -8 Z" fill="${dk}" opacity=".3"/>
-        </g>`,
-        front: `<g class="hair-front">
-          <path d="M -28 -8 C -32 -28 -28 -44 0 -48 C 28 -44 32 -28 28 -8 C 22 -22 10 -30 0 -30 C -10 -30 -22 -22 -28 -8 Z" fill="${c}"/>
-          <path d="M -6 -48 C -4 -60 -2 -70 0 -76 C 2 -70 4 -60 6 -48 Z" fill="${c}"/>
-          <path d="M -14 -44 C -16 -56 -14 -64 -12 -68 C -10 -62 -8 -54 -10 -46 Z" fill="${c}" opacity=".9"/>
-          <path d="M 14 -44 C 16 -56 14 -64 12 -68 C 10 -62 8 -54 10 -46 Z" fill="${c}" opacity=".9"/>
-          <line x1="0" y1="-74" x2="0" y2="-50" stroke="${hi}" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
-          <line x1="-12" y1="-66" x2="-10" y2="-48" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
-          <line x1="12" y1="-66" x2="10" y2="-48" stroke="${hi}" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
-        </g>`,
-      };
+    warrior: {
+      back: (c) => {
+        const sh = GWColor.shade(c, -30);
+        return `
+        <g class="hair-back">
+          <!-- long flowing strands left and right -->
+          <path d="M -38 -56 Q -66 -30 -64 10 Q -62 46 -50 68 Q -40 80 -32 68 Q -26 50 -30 20 Q -34 -10 -44 8" fill="${sh}"/>
+          <path d="M 38 -56 Q 66 -30 64 10 Q 62 46 50 68 Q 40 80 32 68 Q 26 50 30 20 Q 34 -10 44 8" fill="${sh}"/>
+          <!-- center back flow -->
+          <path d="M -16 -70 Q 0 -76 16 -70 Q 10 -10 8 36 Q 4 68 0 78 Q -4 68 -8 36 Q -10 -10 -16 -70 Z" fill="${c}"/>
+        </g>`;
+      },
+      front: (c) => {
+        const hi = GWColor.shade(c, 44);
+        const sh = GWColor.shade(c, -28);
+        return `
+        <g class="hair-front">
+          <!-- scalp base cap -->
+          <path d="M -44 8 Q -52 -30 -40 -54 Q -24 -70 0 -70 Q 24 -70 40 -54 Q 52 -30 44 8 Q 20 -22 0 -26 Q -20 -22 -44 8 Z" fill="${c}"/>
+          <!-- central tall spike cluster -->
+          <path d="M -14 -60 Q -18 -90 -10 -112 Q -4 -92 -4 -64 Z" fill="${c}"/>
+          <path d="M -6 -64 Q -4 -100 0 -112 Q 4 -100 6 -64 Z" fill="${hi}" opacity=".7"/>
+          <path d="M 0 -66 Q 8 -98 14 -108 Q 18 -88 16 -62 Z" fill="${c}"/>
+          <!-- flanking spikes -->
+          <path d="M -28 -56 Q -36 -80 -28 -98 Q -20 -78 -18 -58 Z" fill="${sh}"/>
+          <path d="M 24 -58 Q 34 -82 30 -100 Q 22 -80 20 -60 Z" fill="${sh}"/>
+          <!-- side coverage -->
+          <path d="M -44 8 Q -54 -8 -50 -32 Q -46 -52 -40 -54" fill="${sh}"/>
+          <path d="M 44 8 Q 54 -8 50 -32 Q 46 -52 40 -54" fill="${sh}"/>
+          <!-- highlight streaks -->
+          <path d="M -8 -66 Q -6 -98 0 -110" fill="none" stroke="${hi}" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+          <path d="M -18 -62 Q -16 -88 -10 -106" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+          <path d="M 6 -64 Q 10 -92 14 -104" fill="none" stroke="${hi}" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </g>`;
+      }
     },
+
   };
 
-  /* ---------- Costumes ---------- */
-  /* Each costume has: torso, legs, feet, shoulders, details colors;
-     plus optional extra paths for armor/collar/etc. */
-  const COSTUMES = {
-    default: {
-      name: 'Casual', icon: '👕',
-      colors: { shirt: '#1e3a5f', pants: '#2a1f0a', feet: '#1a1a1a', belt: '#6b4c2a' },
-    },
-    samurai: {
-      name: 'Samurai', icon: '⚔️',
-      colors: { shirt: '#c8282a', pants: '#1a1a2e', feet: '#1a1a1a', belt: '#2a2a1a', armor: '#c8a240', armordark: '#8a6a18' },
-    },
-    ninja: {
-      name: 'Ninja', icon: '🥷',
-      colors: { shirt: '#0a0a0a', pants: '#0a0a0a', feet: '#1a1a1a', belt: '#444', armor: '#222', mask: '#0a0a0a' },
-    },
-    slayer: {
-      name: 'Demon Slayer', icon: '🌊',
-      colors: { shirt: '#1a6040', pants: '#e8e4d0', feet: '#2a1a0a', belt: '#8a5a2a', stripe: '#d4282a' },
-    },
-    hero: {
-      name: 'Hero Academy', icon: '🦸',
-      colors: { shirt: '#1a2a6e', pants: '#1a2a6e', feet: '#1a1a1a', belt: '#c8c820', accent: '#8a8aff' },
-    },
-    sorcerer: {
-      name: 'Dark Sorcerer', icon: '🔮',
-      colors: { shirt: '#18082a', pants: '#140620', feet: '#0a0814', belt: '#6a20a0', robe: '#1e0e36', accent: '#9a40e0' },
-    },
-    diamondarmor: {
-      name: 'Diamond Armor', icon: '💎',
-      colors: { shirt: '#2ae4e4', pants: '#1ad4d4', feet: '#14b4b4', belt: '#1ad4d4', armor: '#2ae4e4', armordark: '#14a4a4' },
-      pixel: true,
-    },
-    netherarmor: {
-      name: 'Netherite', icon: '⚫',
-      colors: { shirt: '#3a3438', pants: '#2e282c', feet: '#1e1820', belt: '#2a2428', armor: '#3a3438', armordark: '#1e181c' },
-      pixel: true,
-    },
-    trainer: {
-      name: 'Pokémon Trainer', icon: '🎒',
-      colors: { shirt: '#2a60c8', pants: '#1a1a1a', feet: '#e8e8e8', belt: '#f5d020', cap: '#2a60c8' },
-    },
-    teamrocket: {
-      name: 'Team Rocket', icon: '🚀',
-      colors: { shirt: '#e8e8e8', pants: '#e8e8e8', feet: '#1a1a1a', belt: '#e8e8e8', logo: '#c82828' },
-    },
+  /* ------------------------------------------------------------------ */
+  /*  Eye styles                                                          */
+  /*  Each renders a PAIR of eyes.                                        */
+  /*  Individual eye group uses transform="translate(±26, -16)"          */
+  /*  Sclera: rx=13, ry=9                                                */
+  /* ------------------------------------------------------------------ */
+
+  const EYE_STYLES = {
+
+    default: (eyeColor) => `
+      <g class="eyes">
+        <!-- left eye -->
+        <g transform="translate(-26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="7.5" rx="7.5" fill="${eyeColor}"/>
+          <ellipse ry="5" rx="5" fill="#111" cy="0.5"/>
+          <circle cx="-3" cy="-2.5" r="1.8" fill="#fff" opacity=".9"/>
+          <circle cx="2" cy="2.5" r="1" fill="#fff" opacity=".7"/>
+          <!-- upper eyelid line -->
+          <path d="M -13 0 Q 0 -11 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- lower lash line subtle -->
+          <path d="M -11 4 Q 0 8 11 4" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+          <!-- corner lash hints -->
+          <line x1="-13" y1="0" x2="-16" y2="-3" stroke="#1a1a1a" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="13" y1="0" x2="16" y2="-2" stroke="#1a1a1a" stroke-width="1.3" stroke-linecap="round"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="7.5" rx="7.5" fill="${eyeColor}"/>
+          <ellipse ry="5" rx="5" fill="#111" cy="0.5"/>
+          <circle cx="-3" cy="-2.5" r="1.8" fill="#fff" opacity=".9"/>
+          <circle cx="2" cy="2.5" r="1" fill="#fff" opacity=".7"/>
+          <path d="M -13 0 Q 0 -11 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M -11 4 Q 0 8 11 4" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+          <line x1="-13" y1="0" x2="-16" y2="-2" stroke="#1a1a1a" stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="13" y1="0" x2="16" y2="-3" stroke="#1a1a1a" stroke-width="1.3" stroke-linecap="round"/>
+        </g>
+      </g>`,
+
+    sharp: (eyeColor) => `
+      <g class="eyes">
+        <!-- left eye: angular/fox shape -->
+        <g transform="translate(-26,-16)">
+          <path d="M -13 3 L -8 -9 L 6 -9 L 13 3 Q 0 7 -13 3 Z" fill="#fff"/>
+          <ellipse ry="6.5" rx="6.5" fill="${eyeColor}" cy="-1"/>
+          <ellipse ry="4.5" rx="4.5" fill="#111" cy="-0.5"/>
+          <circle cx="-2" cy="-3" r="1.6" fill="#fff" opacity=".9"/>
+          <path d="M -13 3 L -8 -9 L 6 -9 L 13 3" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M -11 3 Q 0 8 11 3" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <path d="M -13 3 L -6 -9 L 8 -9 L 13 3 Q 0 7 -13 3 Z" fill="#fff"/>
+          <ellipse ry="6.5" rx="6.5" fill="${eyeColor}" cy="-1"/>
+          <ellipse ry="4.5" rx="4.5" fill="#111" cy="-0.5"/>
+          <circle cx="-2" cy="-3" r="1.6" fill="#fff" opacity=".9"/>
+          <path d="M -13 3 L -6 -9 L 8 -9 L 13 3" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+          <path d="M -11 3 Q 0 8 11 3" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+        </g>
+      </g>`,
+
+    sleepy: (eyeColor) => `
+      <g class="eyes">
+        <!-- left eye: heavy drooping lid -->
+        <g transform="translate(-26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="7" rx="7" fill="${eyeColor}" cy="1"/>
+          <ellipse ry="5" rx="5" fill="#111" cy="1.5"/>
+          <circle cx="-2.5" cy="-1" r="1.5" fill="#fff" opacity=".85"/>
+          <!-- heavy upper lid covering top half -->
+          <path d="M -13 0 Q -4 -5 13 0 Q 13 -9 0 -9 Q -13 -9 -13 0 Z" fill="#fde8d2" opacity=".0"/>
+          <path d="M -13 0 Q 0 -4 13 0" fill="#e8c0a0" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <!-- drooping top -->
+          <path d="M -13 0 Q -4 -3 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M -11 4 Q 0 8.5 11 4" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="7" rx="7" fill="${eyeColor}" cy="1"/>
+          <ellipse ry="5" rx="5" fill="#111" cy="1.5"/>
+          <circle cx="-2.5" cy="-1" r="1.5" fill="#fff" opacity=".85"/>
+          <path d="M -13 0 Q 0 -4 13 0" fill="#e8c0a0" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <path d="M -13 0 Q -4 -3 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M -11 4 Q 0 8.5 11 4" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+        </g>
+      </g>`,
+
+    wide: (eyeColor) => `
+      <g class="eyes">
+        <!-- left eye: large startled wide eyes with visible white above iris -->
+        <g transform="translate(-26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="8" rx="8" fill="${eyeColor}"/>
+          <ellipse ry="5.5" rx="5.5" fill="#111"/>
+          <circle cx="-3" cy="-3" r="2" fill="#fff" opacity=".95"/>
+          <circle cx="3" cy="3" r="1.2" fill="#fff" opacity=".7"/>
+          <!-- wide open upper lid -->
+          <path d="M -13 -1 Q 0 -13 13 -1" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <path d="M -11 5 Q 0 9 11 5" fill="none" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+          <!-- lashes -->
+          <line x1="-13" y1="-1" x2="-15" y2="-5" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="-8" y1="-8" x2="-9" y2="-12" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="0" y1="-9" x2="0" y2="-13" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="8" y1="-8" x2="9" y2="-12" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="13" y1="-1" x2="16" y2="-4" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="8" rx="8" fill="${eyeColor}"/>
+          <ellipse ry="5.5" rx="5.5" fill="#111"/>
+          <circle cx="-3" cy="-3" r="2" fill="#fff" opacity=".95"/>
+          <circle cx="3" cy="3" r="1.2" fill="#fff" opacity=".7"/>
+          <path d="M -13 -1 Q 0 -13 13 -1" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          <path d="M -11 5 Q 0 9 11 5" fill="none" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+          <line x1="-13" y1="-1" x2="-16" y2="-4" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="-8" y1="-8" x2="-9" y2="-12" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="0" y1="-9" x2="0" y2="-13" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="8" y1="-8" x2="9" y2="-12" stroke="#1a1a1a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="13" y1="-1" x2="15" y2="-5" stroke="#1a1a1a" stroke-width="1.4" stroke-linecap="round"/>
+        </g>
+      </g>`,
+
+    sharingan: (_eyeColor) => `
+      <g class="eyes">
+        <!-- left eye: Sharingan — red iris, black tomoe, red pupil -->
+        <g transform="translate(-26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <!-- red iris -->
+          <ellipse ry="7.5" rx="7.5" fill="#c01010"/>
+          <!-- tomoe pattern (3 commas rotated 120°) -->
+          <g fill="#111">
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z"/>
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z" transform="rotate(120 0 0)"/>
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z" transform="rotate(240 0 0)"/>
+          </g>
+          <!-- red pupil -->
+          <circle r="1.8" fill="#c01010"/>
+          <circle cx="-2.5" cy="-2.5" r="1.2" fill="#fff" opacity=".7"/>
+          <path d="M -13 0 Q 0 -10 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M -11 4.5 Q 0 8 11 4.5" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <ellipse rx="13" ry="9" fill="#fff"/>
+          <ellipse ry="7.5" rx="7.5" fill="#c01010"/>
+          <g fill="#111">
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z"/>
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z" transform="rotate(120 0 0)"/>
+            <path d="M 0 -4.2 Q 2.5 -5.5 4.2 -3.2 Q 5 -0.5 3 1.2 Q 1 2.5 -0.5 1 Q -1 0 0 -2 Q 0.8 -3.2 0 -4.2 Z" transform="rotate(240 0 0)"/>
+          </g>
+          <circle r="1.8" fill="#c01010"/>
+          <circle cx="-2.5" cy="-2.5" r="1.2" fill="#fff" opacity=".7"/>
+          <path d="M -13 0 Q 0 -10 13 0" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M -11 4.5 Q 0 8 11 4.5" fill="none" stroke="#1a1a1a" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+        </g>
+      </g>`,
+
+    ender: (_eyeColor) => `
+      <g class="eyes">
+        <!-- left eye: dark sclera with animated glowing rect -->
+        <g transform="translate(-26,-16)">
+          <ellipse rx="13" ry="9" fill="#1a1a2e"/>
+          <rect x="-8" y="-4" width="16" height="8" rx="2" fill="#7b00ff">
+            <animate attributeName="opacity" values="1;0.4;1" dur="1.8s" repeatCount="indefinite"/>
+            <animate attributeName="fill" values="#7b00ff;#a855f7;#7b00ff" dur="1.8s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#c084fc" stroke-width="0.8" filter="url(#eye-glow)">
+            <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.8s" repeatCount="indefinite"/>
+          </rect>
+          <path d="M -13 0 Q 0 -10 13 0" fill="none" stroke="#6b00cc" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M -11 4.5 Q 0 8 11 4.5" fill="none" stroke="#6b00cc" stroke-width="1" stroke-linecap="round" opacity=".7"/>
+        </g>
+        <!-- right eye -->
+        <g transform="translate(26,-16)">
+          <ellipse rx="13" ry="9" fill="#1a1a2e"/>
+          <rect x="-8" y="-4" width="16" height="8" rx="2" fill="#7b00ff">
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="1.8s" repeatCount="indefinite"/>
+            <animate attributeName="fill" values="#a855f7;#7b00ff;#a855f7" dur="1.8s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="-8" y="-4" width="16" height="8" rx="2" fill="none" stroke="#c084fc" stroke-width="0.8" filter="url(#eye-glow)">
+            <animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.8s" repeatCount="indefinite"/>
+          </rect>
+          <path d="M -13 0 Q 0 -10 13 0" fill="none" stroke="#6b00cc" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M -11 4.5 Q 0 8 11 4.5" fill="none" stroke="#6b00cc" stroke-width="1" stroke-linecap="round" opacity=".7"/>
+        </g>
+      </g>`,
+
   };
 
-  const ACCESSORIES = {
-    none:   { name: 'None', icon: '—' },
-    cape:   { name: 'Cape', icon: '🦸' },
-    wings:  { name: 'Wings', icon: '🪶' },
-    mask:   { name: 'Half Mask', icon: '😷' },
-    onimask:{ name: 'Oni Mask', icon: '👹' },
-    crown:  { name: 'Crown', icon: '👑' },
-    helmet: { name: 'Helmet', icon: '⛑️' },
-    aura:   { name: 'Power Aura', icon: '✨' },
+  /* ------------------------------------------------------------------ */
+  /*  Accessories                                                         */
+  /* ------------------------------------------------------------------ */
+
+  const ACCESSORY_RENDERERS = {
+
+    none: () => '',
+
+    mask: (skin) => {
+      const sh = GWColor.shade('#2a2a3a', -20);
+      return `
+      <g class="accessory-mask">
+        <!-- lower-face ninja mask covering nose bottom to chin -->
+        <path d="M -40 8 Q -44 24 -38 36 Q -20 46 0 46 Q 20 46 38 36 Q 44 24 40 8 Q 20 14 0 16 Q -20 14 -40 8 Z" fill="#2a2a3a"/>
+        <!-- mask fold lines -->
+        <path d="M -38 12 Q 0 20 38 12" fill="none" stroke="${sh}" stroke-width="1.2" opacity=".6"/>
+        <path d="M -36 20 Q 0 28 36 20" fill="none" stroke="${sh}" stroke-width="1" opacity=".5"/>
+        <!-- mask edge at nose area -->
+        <path d="M -40 8 Q -20 4 0 4 Q 20 4 40 8" fill="none" stroke="#3a3a4e" stroke-width="1.5" stroke-linecap="round"/>
+      </g>`;
+    },
+
+    onimask: (skin) => `
+      <g class="accessory-onimask">
+        <!-- red oni mask covering full face -->
+        <path d="${FACE_PATH}" fill="#cc1a1a" opacity=".92"/>
+        <!-- eye holes -->
+        <ellipse cx="-26" cy="-16" rx="14" ry="10" fill="#1a0a0a"/>
+        <ellipse cx="26" cy="-16" rx="14" ry="10" fill="#1a0a0a"/>
+        <!-- oni features: brow ridges -->
+        <path d="M -38 -26 Q -26 -32 -14 -26" fill="none" stroke="#8a0000" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 14 -26 Q 26 -32 38 -26" fill="none" stroke="#8a0000" stroke-width="3" stroke-linecap="round"/>
+        <!-- nose bump -->
+        <ellipse cx="0" cy="2" rx="6" ry="5" fill="#b01414"/>
+        <!-- fangs -->
+        <path d="M -10 30 L -12 44 L -6 40 Z" fill="#f5f0e8"/>
+        <path d="M 10 30 L 12 44 L 6 40 Z" fill="#f5f0e8"/>
+        <!-- cheek marks -->
+        <path d="M -36 -4 Q -30 4 -28 12" fill="none" stroke="#8a0000" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 36 -4 Q 30 4 28 12" fill="none" stroke="#8a0000" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- highlight on forehead -->
+        <path d="M -10 -52 Q 0 -58 10 -52" fill="none" stroke="#e83a3a" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+      </g>`,
+
+    glasses: () => `
+      <g class="accessory-glasses">
+        <!-- thin circular frames over the eyes -->
+        <circle cx="-26" cy="-16" r="14" fill="none" stroke="#2a2a2a" stroke-width="1.8"/>
+        <circle cx="26" cy="-16" r="14" fill="none" stroke="#2a2a2a" stroke-width="1.8"/>
+        <!-- bridge -->
+        <path d="M -12 -16 Q 0 -19 12 -16" fill="none" stroke="#2a2a2a" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- left temple arm -->
+        <path d="M -40 -16 Q -44 -12 -50 -10" fill="none" stroke="#2a2a2a" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- right temple arm -->
+        <path d="M 40 -16 Q 44 -12 50 -10" fill="none" stroke="#2a2a2a" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- subtle lens tint -->
+        <circle cx="-26" cy="-16" r="13.5" fill="#a0c8f8" opacity=".12"/>
+        <circle cx="26" cy="-16" r="13.5" fill="#a0c8f8" opacity=".12"/>
+        <!-- lens reflection -->
+        <path d="M -32 -22 Q -28 -24 -24 -22" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+        <path d="M 20 -22 Q 24 -24 28 -22" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+      </g>`,
+
+    crown: (skin, hairColor) => {
+      const gold1 = '#f5c518';
+      const gold2 = '#d4a010';
+      const gold3 = '#ffe066';
+      return `
+      <g class="accessory-crown">
+        <!-- crown band sits just above hairline -->
+        <rect x="-38" y="-92" width="76" height="12" rx="3" fill="${gold2}"/>
+        <!-- five crown points -->
+        <path d="M -38 -92 L -38 -108 L -24 -96 L -10 -112 L 0 -98 L 10 -112 L 24 -96 L 38 -108 L 38 -92 Z" fill="${gold1}"/>
+        <!-- gem in center point -->
+        <ellipse cx="0" cy="-104" rx="4" ry="5" fill="#e0303a"/>
+        <ellipse cx="0" cy="-104" rx="2" ry="2.5" fill="#ff7a80" opacity=".7"/>
+        <!-- small gems on side points -->
+        <circle cx="-32" cy="-102" r="2.5" fill="#3a88e0"/>
+        <circle cx="32" cy="-102" r="2.5" fill="#3a88e0"/>
+        <!-- highlight on band -->
+        <path d="M -36 -88 Q 0 -86 36 -88" fill="none" stroke="${gold3}" stroke-width="1.5" stroke-linecap="round" opacity=".6"/>
+        <!-- crown band detail dots -->
+        <circle cx="-22" cy="-86" r="2" fill="${gold3}" opacity=".7"/>
+        <circle cx="0"   cy="-86" r="2" fill="${gold3}" opacity=".7"/>
+        <circle cx="22"  cy="-86" r="2" fill="${gold3}" opacity=".7"/>
+      </g>`;
+    },
+
   };
 
-  /* ---------- Pose definitions (joint angles in degrees) ---------- */
-  /* joints: lShoulder, rShoulder, lElbow, rElbow, lHip, rHip, lKnee, rKnee */
-  /* angle=0 → limb straight down; negative → swings outward for both sides (mx handles mirror) */
-  const POSES = {
-    idle:    { name: 'Idle',      a: { lSh:-8,  rSh:-8,  lEl: 5, rEl: 5,  lHp:-3, rHp:-3, lKn:0,  rKn:0  } },
-    battle:  { name: 'Battle',    a: { lSh:-30, rSh: 20, lEl:20, rEl:15,  lHp:-14,rHp:-14,lKn:20, rKn:35 } },
-    slash:   { name: 'Mid-Slash', a: { lSh:-85, rSh:110, lEl:55, rEl:10,  lHp:-14,rHp:-18,lKn:24, rKn:10 } },
-    guard:   { name: 'Guard',     a: { lSh: 50, rSh: 50, lEl:65, rEl:65,  lHp:-8, rHp:-8, lKn:12, rKn:12 } },
-    victory: { name: 'Victory',   a: { lSh:-140,rSh:-5,  lEl:50, rEl: 5,  lHp:-2, rHp:-2, lKn:0,  rKn:0  } },
-    kneel:   { name: 'Kneel',     a: { lSh:-10, rSh:-10, lEl: 8, rEl: 8,  lHp:12, rHp:-3, lKn:80, rKn:5  } },
-  };
+  /* ------------------------------------------------------------------ */
+  /*  Main portrait builder                                               */
+  /* ------------------------------------------------------------------ */
 
-  /* ---------- Core SVG body builder ---------- */
-  function buildCharacterSVG(cfg, showJointHandles = false) {
-    const {
-      skinTone = 'tone1',
-      hairStyle = 'spiky',
-      hairColor = '#111111',
-      hairColor2 = '#1a1a1a',
-      eyeStyle = 'default',
-      eyeColor = '#2a5fc8',
-      costume = 'default',
-      accessory = 'none',
-      capeColor = '#1a2a6e',
-      auraColor = '#3b82f6',
-      poses = { ...POSES.idle.a },
-    } = cfg;
+  function buildPortrait(cfg) {
+    const skinId   = cfg.skinTone  || 'tone1';
+    const hairStyle = cfg.hairStyle || 'spiky';
+    const hairColor = cfg.hairColor || '#0d0d0d';
+    const eyeStyle  = cfg.eyeStyle  || 'default';
+    const eyeColor  = cfg.eyeColor  || '#2a5fc8';
+    const accessory = cfg.accessory || 'none';
 
-    const skin = SKIN_TONES.find(t => t.id === skinTone) || SKIN_TONES[0];
-    const cos = COSTUMES[costume] || COSTUMES.default;
-    const s = skin.hex, ss = skin.shadow, sl = skin.lip;
-    const a = poses;
+    const tone = SKIN_TONES.find(t => t.id === skinId) || SKIN_TONES[0];
+    const skin     = tone.hex;
+    const shadow   = tone.shadow;
+    const shadow2  = tone.shadow2;
+    const lip      = tone.lip;
 
-    /* ---- Body geometry (origin = mid-pelvis) ---- */
-    /* Torso */
-    const torso = `
-      <g class="torso">
-        ${cos.pixel ? pixelArmor(cos.colors, 'torso') : `
-        <path d="M -20 -72 Q -22 -40 -20 -16 L 20 -16 Q 22 -40 20 -72 Q 10 -78 0 -78 Q -10 -78 -20 -72 Z" fill="${cos.colors.shirt}"/>
-        ${cos.colors.robe ? `<path d="M -22 -70 Q -24 -38 -22 -14 L 22 -14 Q 24 -38 22 -70 Q 10 -76 0 -76 Q -10 -76 -22 -70 Z" fill="${cos.colors.robe}" opacity=".7"/>` : ''}
-        ${cos.colors.stripe ? `<path d="M -4 -78 L -4 -18 M 4 -78 L 4 -18" stroke="${cos.colors.stripe}" stroke-width="3.5" stroke-linecap="round"/>` : ''}
-        ${cos.colors.logo ? `<text x="0" y="-44" font-size="16" font-weight="700" text-anchor="middle" fill="${cos.colors.logo}" font-family="sans-serif">R</text>` : ''}
-        <rect x="-20" y="-18" width="40" height="5" rx="2" fill="${cos.colors.belt}"/>
-        `}
+    const hairDef  = HAIR_STYLES[hairStyle] || HAIR_STYLES.spiky;
+    const hairBack = hairDef.back(hairColor);
+    const hairFront = hairDef.front(hairColor);
+
+    const eyeFn = EYE_STYLES[eyeStyle] || EYE_STYLES.default;
+    const eyesSVG = eyeFn(eyeColor);
+
+    const accFn = ACCESSORY_RENDERERS[accessory] || ACCESSORY_RENDERERS.none;
+    const accSVG = accFn(skin, hairColor);
+
+    const browColor = '#1a1a1a';
+
+    /* Ear helper */
+    const ears = `
+      <!-- left ear -->
+      <g>
+        <ellipse cx="-49" cy="-10" rx="6" ry="9" fill="${skin}"/>
+        <ellipse cx="-49" cy="-10" rx="3.5" ry="6" fill="${shadow}"/>
+        <path d="M -50 -18 Q -54 -10 -50 -2" fill="none" stroke="${shadow2}" stroke-width="1" stroke-linecap="round" opacity=".6"/>
+      </g>
+      <!-- right ear -->
+      <g>
+        <ellipse cx="49" cy="-10" rx="6" ry="9" fill="${skin}"/>
+        <ellipse cx="49" cy="-10" rx="3.5" ry="6" fill="${shadow}"/>
+        <path d="M 50 -18 Q 54 -10 50 -2" fill="none" stroke="${shadow2}" stroke-width="1" stroke-linecap="round" opacity=".6"/>
       </g>`;
 
-    /* Pelvis / hips */
-    const pelvis = `<path d="M -20 -16 Q -22 -4 -16 0 L 16 0 Q 22 -4 20 -16 Z" fill="${cos.colors.pants}"/>`;
+    /* Nose */
+    const nose = `
+      <!-- subtle nose: small shadow ellipses -->
+      <ellipse cx="-4" cy="4" rx="3.5" ry="2" fill="${shadow}" opacity=".35" transform="rotate(-8,-4,4)"/>
+      <ellipse cx="4" cy="4" rx="3.5" ry="2" fill="${shadow}" opacity=".35" transform="rotate(8,4,4)"/>
+      <path d="M -3 2 Q 0 6 3 2" fill="none" stroke="${shadow}" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>`;
 
-    /* Left leg (upper+lower, positive angle = forward) */
-    const lLeg = makeJointedLimb('lLeg', -8, 0, 0, 58, 52, cos.colors.pants, cos.colors.feet, s, a.lHp, a.lKn, false, cos.pixel);
-    const rLeg = makeJointedLimb('rLeg', 8, 0, 0, 58, 52, cos.colors.pants, cos.colors.feet, s, a.rHp, a.rKn, false, cos.pixel);
+    /* Mouth */
+    const mouth = `
+      <!-- upper lip line -->
+      <path d="M -12 21 Q -6 19 0 20 Q 6 19 12 21" fill="none" stroke="${GWColor.mix(lip, shadow, 0.5)}" stroke-width="1.4" stroke-linecap="round"/>
+      <!-- lower lip -->
+      <path d="M -11 21 Q 0 29 11 21 Q 8 26 0 27.5 Q -8 26 -11 21 Z" fill="${lip}" opacity=".85"/>
+      <!-- lip highlight -->
+      <path d="M -5 25 Q 0 27 5 25" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".35"/>`;
 
-    /* Neck + head */
-    const neck = `<rect x="-7" y="-88" width="14" height="16" rx="6" fill="${s}"/>`;
+    /* Eyebrows */
+    const brows = `
+      <!-- left brow -->
+      <path d="M -38 -30 Q -26 -36 -14 -32" fill="none" stroke="${browColor}" stroke-width="2.4" stroke-linecap="round"/>
+      <!-- right brow -->
+      <path d="M 14 -32 Q 26 -36 38 -30" fill="none" stroke="${browColor}" stroke-width="2.4" stroke-linecap="round"/>`;
 
-    /* Head */
-    const headY = -116;
-    const headGroup = buildHead(s, ss, sl, hairStyle, hairColor, hairColor2, eyeStyle, eyeColor, accessory, cos);
+    /* Collar / neck */
+    const collar = `
+      <!-- neck -->
+      <rect x="-14" y="42" width="28" height="30" rx="9" fill="${skin}"/>
+      <rect x="-8" y="42" width="6" height="30" rx="2" fill="${shadow}" opacity=".3"/>
+      <!-- shirt collar at y=70-90 -->
+      <path d="M -50 90 Q -30 70 -14 72 L 0 80 L 14 72 Q 30 70 50 90 Z" fill="#1e3a5f"/>
+      <!-- collar fold left -->
+      <path d="M -14 72 Q -8 76 0 80" fill="none" stroke="#162d4a" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- collar fold right -->
+      <path d="M 14 72 Q 8 76 0 80" fill="none" stroke="#162d4a" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- shirt body hint -->
+      <path d="M -50 90 Q -50 95 50 95 Q 50 90 50 90 Z" fill="#1e3a5f"/>
+      <!-- collar highlight -->
+      <path d="M -28 76 Q -14 72 0 74" fill="none" stroke="#2e5a8f" stroke-width="1.5" stroke-linecap="round" opacity=".5"/>`;
 
-    /* Arms */
-    const lArm = makeJointedLimb('lArm', -20, -72, 0, 50, 44, cos.colors.shirt, s, s, a.lSh, a.lEl, true, cos.pixel);
-    const rArm = makeJointedLimb('rArm',  20, -72, 0, 50, 44, cos.colors.shirt, s, s, a.rSh, a.rEl, true, cos.pixel, true);
-
-    /* Accessories */
-    const accLayer = buildAccessory(accessory, capeColor, auraColor, cos);
+    /* Face shadow for dimensionality (subtle gradient on left side) */
+    const faceShadow = `
+      <!-- subtle face shadow on right side for dimensionality -->
+      <path d="M 44 8 Q 50 -28 40 -54 Q 30 -20 32 8 Q 36 30 36 38" fill="${shadow}" opacity=".22"/>`;
 
     /* Defs */
-    const defs = `<defs>
-      <filter id="eye-glow" x="-80%" y="-80%" width="360%" height="360%">
-        <feGaussianBlur stdDeviation="3"/>
-      </filter>
-      <filter id="aura-blur">
-        <feGaussianBlur stdDeviation="8"/>
-      </filter>
-    </defs>`;
+    const defs = `
+      <defs>
+        <filter id="eye-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <radialGradient id="face-highlight" cx="38%" cy="35%" r="55%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>`;
 
-    /* Joint handles overlay */
-    const jointHandles = showJointHandles ? buildJointHandles(a) : '';
-
-    return `<g class="character" transform="translate(0 0)">
-      ${defs}
-      ${accLayer.behind}
-      ${rLeg}
-      ${lLeg}
-      ${pelvis}
-      ${torso}
-      ${rArm}
-      ${lArm}
-      ${neck}
-      <g transform="translate(0 ${headY})">${headGroup}</g>
-      ${accLayer.front}
-      ${jointHandles}
-    </g>`;
+    return [
+      defs,
+      collar,
+      hairBack,
+      /* face fill */
+      `<path d="${FACE_PATH}" fill="${skin}"/>`,
+      `<path d="${FACE_PATH}" fill="url(#face-highlight)"/>`,
+      faceShadow,
+      ears,
+      nose,
+      mouth,
+      hairFront,
+      brows,
+      eyesSVG,
+      accSVG,
+    ].join('\n');
   }
 
-  function buildHead(s, ss, sl, hairStyle, hairColor, hairColor2, eyeStyle, eyeColor, accessory, cos) {
-    const rawHair = (HAIR_STYLES[hairStyle] || HAIR_STYLES.spiky)(hairColor, hairColor2);
-    const hairBack  = rawHair.back  || '';
-    const hairFront = rawHair.front || '';
-    const eyes = (EYE_STYLES[eyeStyle] || EYE_STYLES.default)(eyeColor);
-    const hasCap = (accessory === 'none' || accessory === 'cape' || accessory === 'wings' || accessory === 'aura') && cos.colors.cap;
-    const capEl = hasCap ? `<g>
-      <path d="M -30 -12 Q -28 -34 0 -36 Q 28 -34 30 -12 Z" fill="${cos.colors.cap}"/>
-      <rect x="-32" y="-14" width="64" height="7" rx="3" fill="${cos.colors.cap}"/>
-      <rect x="-32" y="-14" width="64" height="3" rx="1.5" fill="${GWColor.shade(cos.colors.cap, 0.25)}"/>
-    </g>` : '';
-
-    /* Render order:
-       1. hairBack  — rear-flowing strands (behind face skin)
-       2. face fill + shadow + face details
-       3. hairFront — scalp cap drawn OVER face skin so it's visible
-       4. eyes      — always on top of hair
-       5. capEl     — hat on top of everything */
-    return `
-      ${hairBack}
-      <path d="M -26 -8 Q -28 -34 -20 -44 Q -10 -52 0 -52 Q 10 -52 20 -44 Q 28 -34 26 -8 Q 20 8 0 12 Q -20 8 -26 -8 Z" fill="${s}"/>
-      <path d="M -26 -8 Q -28 -30 -22 -42 Q -14 -50 0 -50 L 0 12 Q -20 8 -26 -8 Z" fill="${ss}" opacity=".25"/>
-      <path d="M -10 6 Q 0 9 10 6 Q 5 10 0 10 Q -5 10 -10 6 Z" fill="${sl}"/>
-      <path d="M -4 8 Q 0 10 4 8" fill="none" stroke="${sl}" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M -1.5 0 L 0.5 3.5 L -1.5 3.5" fill="${ss}" opacity=".7"/>
-      <path d="M -28 -4 Q -30 8 -26 14 L -24 6 Z" fill="${ss}" opacity=".5"/>
-      <path d="M 28 -4 Q 30 8 26 14 L 24 6 Z" fill="${ss}" opacity=".5"/>
-      ${hairFront}
-      <g transform="translate(0 -20)">${eyes}</g>
-      ${capEl}
-    `;
-  }
-
-  function buildAccessory(accessory, capeColor, auraColor, cos) {
-    switch (accessory) {
-      case 'cape': return {
-        behind: `<path d="M -18 -76 Q -40 -40 -36 40 Q -24 60 0 64 Q 24 60 36 40 Q 40 -40 18 -76 Z"
-          fill="${capeColor}" opacity=".9"/>
-          <path d="M -18 -76 Q -40 -40 -36 40 Q -24 60 0 64 L 0 -76 Z" fill="${GWColor.shade(capeColor, -0.2)}" opacity=".7"/>`,
-        front: '',
-      };
-      case 'wings': return {
-        behind: `<g>
-          <path d="M -18 -70 C -60 -80 -90 -40 -80 10 C -60 -10 -40 -30 -18 -50 Z" fill="${GWColor.shade(capeColor, 0.1)}"/>
-          <path d="M -18 -70 C -60 -60 -80 -10 -70 30 C -52 10 -36 -10 -18 -50 Z" fill="${capeColor}"/>
-          <path d="M 18 -70 C 60 -80 90 -40 80 10 C 60 -10 40 -30 18 -50 Z" fill="${GWColor.shade(capeColor, 0.1)}"/>
-          <path d="M 18 -70 C 60 -60 80 -10 70 30 C 52 10 36 -10 18 -50 Z" fill="${capeColor}"/>
-        </g>`,
-        front: '',
-      };
-      case 'mask': return {
-        behind: '',
-        front: `<g transform="translate(0 -116)">
-          <path d="M -24 -8 Q -26 8 -20 18 Q -10 22 0 22 Q 10 22 20 18 Q 26 8 24 -8 Z"
-            fill="#111" opacity=".85"/>
-          <path d="M -22 -8 Q -24 6 -18 16 Q -10 20 0 20 L 0 -8 Z" fill="#222" opacity=".5"/>
-        </g>`,
-      };
-      case 'onimask': return {
-        behind: '',
-        front: `<g transform="translate(0 -116)">
-          <path d="M -28 -14 Q -32 10 -20 24 Q -10 30 0 30 Q 10 30 20 24 Q 32 10 28 -14 Z"
-            fill="#c82828"/>
-          <path d="M -28 -14 Q -32 8 -22 22 L 0 -14 Z" fill="#a01818" opacity=".7"/>
-          <path d="M -16 -6 L -20 6 L -12 10 L -8 0 Z M 16 -6 L 20 6 L 12 10 L 8 0 Z" fill="#fff" opacity=".9"/>
-          <path d="M -28 -14 C -32 -22 -24 -26 -18 -22 L -22 -12 Z" fill="#fde8c8"/>
-          <path d="M 28 -14 C 32 -22 24 -26 18 -22 L 22 -12 Z" fill="#fde8c8"/>
-          <path d="M -16 -6 Q -10 -12 0 -10 Q 10 -12 16 -6" fill="none" stroke="#600" stroke-width="2"/>
-        </g>`,
-      };
-      case 'crown': return {
-        behind: '',
-        front: `<g transform="translate(0 -166)">
-          <path d="M -20 0 L -20 -18 L -10 -8 L 0 -22 L 10 -8 L 20 -18 L 20 0 Z"
-            fill="${GWColor.shade('#f5c842', 0)}"/>
-          <path d="M -20 0 L -20 -18 L -10 -8 L 0 -22 L 0 0 Z" fill="${GWColor.shade('#f5c842', -0.2)}" opacity=".7"/>
-          <circle cx="0" cy="-22" r="4" fill="#e84040"/>
-          <circle cx="-20" cy="-18" r="3" fill="#40a0e8"/>
-          <circle cx="20" cy="-18" r="3" fill="#40a0e8"/>
-          <rect x="-20" y="-2" width="40" height="4" rx="2" fill="#d4a020"/>
-        </g>`,
-      };
-      case 'helmet': return {
-        behind: '',
-        front: `<g transform="translate(0 -116)">
-          <path d="M -28 -8 Q -30 -40 -20 -48 Q -10 -56 0 -56 Q 10 -56 20 -48 Q 30 -40 28 -8 Z"
-            fill="#2a3142"/>
-          <path d="M -28 -8 Q -30 -36 -22 -46 Q 0 -54 0 -8 Z" fill="#3a4152" opacity=".7"/>
-          <path d="M -14 -4 Q 0 -6 14 -4" fill="none" stroke="${auraColor}" stroke-width="2.5" stroke-linecap="round"/>
-          <rect x="-14" y="-4" width="28" height="10" rx="5" fill="#1a2132" opacity=".8"/>
-          <rect x="-10" y="-3" width="20" height="7" rx="3.5" fill="${auraColor}" opacity=".9"/>
-        </g>`,
-      };
-      case 'aura': return {
-        behind: `<g opacity=".55" filter="url(#aura-blur)">
-          <ellipse cx="0" cy="-60" rx="50" ry="80" fill="${auraColor}" opacity=".4">
-            <animate attributeName="rx" values="50;58;50" dur="2.4s" repeatCount="indefinite"/>
-            <animate attributeName="ry" values="80;90;80" dur="2.4s" repeatCount="indefinite"/>
-          </ellipse>
-        </g>`,
-        front: `<g>
-          <circle cx="-30" cy="-90" r="4" fill="${auraColor}" opacity="0">
-            <animate attributeName="cy" values="-90;-160;-160" dur="1.8s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0;.9;0" dur="1.8s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="25" cy="-80" r="3" fill="${auraColor}" opacity="0">
-            <animate attributeName="cy" values="-80;-160;-160" dur="2.2s" begin=".6s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0;.8;0" dur="2.2s" begin=".6s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="-8" cy="-100" r="2.5" fill="${auraColor}" opacity="0">
-            <animate attributeName="cy" values="-100;-160;-160" dur="2s" begin="1.1s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0;.7;0" dur="2s" begin="1.1s" repeatCount="indefinite"/>
-          </circle>
-        </g>`,
-      };
-      default: return { behind: '', front: '' };
-    }
-  }
-
-  /* Build a jointed limb (upper + lower segment).
-     isArm: true for arms (flipped axis), mirrorX: flip for right-side. */
-  function makeJointedLimb(id, ox, oy, baseAngle, upper, lower, colorA, colorB, skinC, parentAngle, childAngle, isArm, pixel, mirrorX = false) {
-    const sw = isArm ? 11 : 14;   /* segment width */
-    const lw = isArm ? 9 : 12;
-    const mx = mirrorX ? -1 : 1;
-    const totalAngle = baseAngle + parentAngle;
-    const rad = totalAngle * Math.PI / 180;
-    const jx = ox + mx * Math.sin(rad) * upper;
-    const jy = oy + Math.cos(rad) * upper;
-    const elbowAngle = totalAngle + childAngle;
-    const er = elbowAngle * Math.PI / 180;
-    const ex = jx + mx * Math.sin(er) * lower;
-    const ey = jy + Math.cos(er) * lower;
-
-    const upperPath = `M ${ox - sw / 2} ${oy} L ${jx - sw / 2} ${jy} L ${jx + sw / 2} ${jy} L ${ox + sw / 2} ${oy} Z`;
-    const lowerPath = `M ${jx - lw / 2} ${jy} L ${ex - lw / 2} ${ey} L ${ex + lw / 2} ${ey} L ${jx + lw / 2} ${jy} Z`;
-
-    const shadowX = -sw / 6;
-    const endPath = isArm
-      ? `M ${ex - 9} ${ey} Q ${ex - 2} ${ey + 6} ${ex + 2} ${ey + 8} Q ${ex + 6} ${ey + 6} ${ex + 8} ${ey} Z`
-      : `M ${ex - 14} ${ey} Q ${ex - 12} ${ey + 10} ${ex} ${ey + 14} Q ${ex + 12} ${ey + 10} ${ex + 14} ${ey} Z`;
-
-    return `<g class="${id}">
-      <path d="${upperPath}" fill="${colorA}" rx="4"/>
-      <path d="${upperPath}" fill="${GWColor.shade(colorA, -0.25)}" opacity=".35" clip-path=""/>
-      <circle cx="${ox}" cy="${oy}" r="${sw / 2}" fill="${colorA}"/>
-      <path d="${lowerPath}" fill="${colorA}"/>
-      <circle cx="${jx}" cy="${jy}" r="${lw / 2}" fill="${GWColor.shade(colorA, -0.1)}"/>
-      <path d="${endPath}" fill="${colorB}"/>
-      <circle cx="${ex}" cy="${ey}" r="${lw / 2.2}" fill="${colorB}"/>
-    </g>`;
-  }
-
-  function pixelArmor(colors, part) {
-    if (part !== 'torso') return '';
-    return `<g>
-      <rect x="-22" y="-80" width="44" height="66" rx="4" fill="${colors.armor}"/>
-      <rect x="-22" y="-80" width="10" height="66" rx="2" fill="${colors.armordark}" opacity=".6"/>
-      <rect x="-20" y="-78" width="40" height="6" fill="${colors.armordark}" opacity=".5"/>
-      <rect x="-20" y="-66" width="40" height="5" fill="${colors.armordark}" opacity=".4"/>
-      <rect x="-20" y="-52" width="40" height="5" fill="${colors.armordark}" opacity=".4"/>
-      <rect x="-20" y="-38" width="40" height="5" fill="${colors.armordark}" opacity=".4"/>
-      <rect x="-20" y="-18" width="40" height="5" fill="${colors.armordark}" opacity=".5"/>
-    </g>`;
-  }
-
-  function buildJointHandles(a) {
-    const joints = [
-      { id: 'lSh', x: -20, y: -72, label: 'L.Sh' },
-      { id: 'rSh', x: 20,  y: -72, label: 'R.Sh' },
-      { id: 'lHp', x: -8,  y: 0,   label: 'L.Hi' },
-      { id: 'rHp', x: 8,   y: 0,   label: 'R.Hi' },
-    ];
-    return `<g class="joint-handles" opacity=".8">
-      ${joints.map(j => `
-        <g class="joint-handle" data-joint="${j.id}" style="cursor:grab">
-          <circle cx="${j.x}" cy="${j.y}" r="6" fill="rgba(59,130,246,0.25)" stroke="#60a5fa" stroke-width="1.5"/>
-          <text x="${j.x}" y="${j.y + 16}" font-size="7" fill="#8fa3c0" text-anchor="middle" font-family="Inter,sans-serif">${j.label}</text>
-        </g>`).join('')}
-    </g>`;
-  }
-
-  /* ---------- Public API ---------- */
-
-  const DEFAULTS = {
-    skinTone: 'tone1', hairStyle: 'spiky', hairColor: '#111111', hairColor2: '#1a1a1a',
-    eyeStyle: 'default', eyeColor: '#2a5fc8',
-    costume: 'default', accessory: 'none',
-    capeColor: '#1a2a6e', auraColor: '#3b82f6',
-    equippedSword: null, equippedSwordConfig: null,
-    poses: { ...POSES.idle.a },
-  };
-
-  /* Render the character into an <svg> string with given viewBox */
-  function render(cfg = {}, showHandles = false) {
-    const c = { ...DEFAULTS, ...cfg };
-    c.poses = { ...POSES.idle.a, ...(cfg.poses || {}) };
-    const inner = buildCharacterSVG(c, showHandles);
-    /* add sword if equipped */
-    let swordSVG = '';
-    if (c.equippedSwordConfig) {
-      const { g } = Swords.buildGroup(c.equippedSwordConfig);
-      /* position sword at right hand based on pose */
-      const rSh = c.poses.rSh || 0;
-      const rEl = c.poses.rEl || 0;
-      const upper = 50, lower = 44;
-      const rad = rSh * Math.PI / 180;
-      const jx = 20 + (-1) * Math.sin(rad) * upper;
-      const jy = -72  + Math.cos(rad) * upper;
-      const elbowAngle = rSh + rEl;
-      const er = elbowAngle * Math.PI / 180;
-      const ex = jx + (-1) * Math.sin(er) * lower;
-      const ey = jy + Math.cos(er) * lower;
-      const handAngle = elbowAngle;
-      swordSVG = `<g transform="translate(${ex} ${ey}) rotate(${handAngle})">${g}</g>`;
-    }
-    return `${inner}${swordSVG}`;
-  }
-
-  /* Return a full standalone <svg> */
-  function svg(cfg = {}, showHandles = false) {
-    const inner = render(cfg, showHandles);
-    return `<svg viewBox="-80 -240 160 380" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">${inner}</svg>`;
-  }
-
-  /* Inject a re-rendered character into an existing <svg> element */
-  function update(svgEl, cfg = {}, showHandles = false) {
-    svgEl.innerHTML = render(cfg, showHandles);
-    svgEl.setAttribute('viewBox', '-80 -240 160 380');
-  }
+  /* ------------------------------------------------------------------ */
+  /*  Public API                                                          */
+  /* ------------------------------------------------------------------ */
 
   return {
-    SKIN_TONES, HAIR_COLORS, HAIR_STYLES: Object.keys(HAIR_STYLES),
+    SKIN_TONES,
+    HAIR_COLORS,
+    HAIR_STYLES: Object.keys(HAIR_STYLES),
     EYE_STYLES: Object.keys(EYE_STYLES),
-    COSTUMES, ACCESSORIES, POSES,
-    DEFAULTS, render, svg, update,
+    ACCESSORIES: {
+      none:    { name: 'None',     icon: '—'  },
+      mask:    { name: 'Mask',     icon: '😷' },
+      onimask: { name: 'Oni Mask', icon: '👹' },
+      glasses: { name: 'Glasses',  icon: '👓' },
+      crown:   { name: 'Crown',    icon: '👑' },
+    },
+    DEFAULTS: {
+      skinTone:  'tone1',
+      hairStyle: 'spiky',
+      hairColor: '#0d0d0d',
+      eyeStyle:  'default',
+      eyeColor:  '#2a5fc8',
+      accessory: 'none',
+    },
+    svg(cfg, showHandles = false) {
+      return `<svg viewBox="-85 -110 170 200" xmlns="http://www.w3.org/2000/svg" class="avatar-svg">${buildPortrait(cfg)}</svg>`;
+    },
+    update(svgEl, cfg) {
+      svgEl.innerHTML = buildPortrait(cfg);
+      svgEl.setAttribute('viewBox', '-85 -110 170 200');
+    },
   };
+
 })();
